@@ -3,6 +3,7 @@ import type { CompanyContext } from "@/lib/decision-engine/types";
 import type { Database } from "../types";
 
 export type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
+export type CompanyInsert = Database["public"]["Tables"]["companies"]["Insert"];
 
 export async function getCompanyById(
   supabase: SupabaseClient<Database>,
@@ -22,6 +23,15 @@ export async function listCompaniesForUser(
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createCompany(
+  supabase: SupabaseClient<Database>,
+  company: CompanyInsert,
+): Promise<CompanyRow> {
+  const { data, error } = await supabase.from("companies").insert(company).select().single();
   if (error) throw error;
   return data;
 }
