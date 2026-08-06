@@ -28,14 +28,24 @@ interface AnalyzeApiDecision extends PurchaseDecisionResultSource {
   error: string | null;
 }
 
+/**
+ * Converts a form draft to the JSON payload sent to /api/analyze. Blank
+ * fields become `undefined` (and are dropped by JSON.stringify) rather than
+ * `0` / `""` — the server's extraction merge only fills a field from the
+ * document when the caller didn't explicitly provide it, so sending `0` for
+ * "the user left this blank" would silently overwrite whatever Claude read
+ * out of an uploaded PDF.
+ */
 function offerDraftToPayload(draft: OfferDraft) {
+  const numberOrUndefined = (raw: string) => (raw.trim() === "" ? undefined : Number(raw));
+
   return {
-    vendorName: draft.vendorName,
-    upfrontCost: Number(draft.upfrontCost) || 0,
-    monthlyCost: Number(draft.monthlyCost) || 0,
-    hiddenFees: Number(draft.hiddenFees) || 0,
-    contractLengthMonths: Number(draft.contractLengthMonths) || 0,
-    notes: draft.notes || undefined,
+    vendorName: draft.vendorName.trim() || undefined,
+    upfrontCost: numberOrUndefined(draft.upfrontCost),
+    monthlyCost: numberOrUndefined(draft.monthlyCost),
+    hiddenFees: numberOrUndefined(draft.hiddenFees),
+    contractLengthMonths: numberOrUndefined(draft.contractLengthMonths),
+    notes: draft.notes.trim() || undefined,
   };
 }
 
@@ -53,6 +63,11 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PurchaseDecisionResult | null>(null);
 
+  // When a document is attached, offer fields are allowed to stay blank —
+  // extraction fills them server-side. Without one, manual entry is the
+  // only source of truth, so the browser should still catch empty fields.
+  const hasDocumentSource = Boolean(file) || documentText.trim().length > 0;
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setStatus("submitting");
@@ -62,7 +77,11 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     const input = {
       decisionTitle,
       primaryOffer: offerDraftToPayload(primaryOffer),
-      alternativeOffers: alternativeOffers.map(offerDraftToPayload),
+      // An empty array is a real value (deepMergePreferOverride replaces
+      // arrays wholesale) and would wipe out any alternatives Claude
+      // extracted from the document — send undefined instead when the user
+      // hasn't manually added any.
+      alternativeOffers: alternativeOffers.length > 0 ? alternativeOffers.map(offerDraftToPayload) : undefined,
       vatRate: vatRateOverride ? Number(vatRateOverride) / 100 : undefined,
       expectedMonthlyBenefit: expectedMonthlyBenefit ? Number(expectedMonthlyBenefit) : undefined,
       documentText: documentText || undefined,
@@ -73,15 +92,29 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     formData.set("companyId", companyId);
     formData.set("title", decisionTitle);
     formData.set("input", JSON.stringify(input));
-    if (file) formData.set("file", file);
+    if (file) {
+      formData.set("file", file);
+    } else if (documentText.trim()) {
+      // Triggers the same server-side parse + extraction path as a file
+      // upload, so relying purely on pasted text also fills the form.
+      formData.set("text", documentText);
+    }
 
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
-      const body = (await response.json()) as { decision?: AnalyzeApiDecision; error?: string };
+      const body = (await response.json()) as {
+        decision?: AnalyzeApiDecision;
+        error?: string;
+        issues?: Array<{ path: (string | number)[]; message: string }>;
+      };
 
       if (!response.ok || !body.decision || body.decision.status !== "completed") {
         setStatus("error");
-        setError(body.decision?.error ?? body.error ?? "Analysis failed");
+        const baseMessage = body.decision?.error ?? body.error ?? "Analysis failed";
+        const issuesSummary = body.issues?.length
+          ? " — " + body.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`).join("; ")
+          : "";
+        setError(baseMessage + issuesSummary);
         return;
       }
 
@@ -150,7 +183,13 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         </CardContent>
       </Card>
 
-      <OfferFieldset idPrefix="primary" title="Primary offer" value={primaryOffer} onChange={setPrimaryOffer} />
+      <OfferFieldset
+        idPrefix="primary"
+        title="Primary offer"
+        value={primaryOffer}
+        onChange={setPrimaryOffer}
+        required={!hasDocumentSource}
+      />
 
       {alternativeOffers.map((offer, index) => (
         <OfferFieldset
@@ -162,6 +201,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
             setAlternativeOffers((offers) => offers.map((o, i) => (i === index ? next : o)))
           }
           onRemove={() => setAlternativeOffers((offers) => offers.filter((_, i) => i !== index))}
+          required={!hasDocumentSource}
         />
       ))}
 
@@ -225,6 +265,10 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
           <div className="space-y-2">
             <Label>Or upload a PDF quote / contract</Label>
             <FileDropzone file={file} onFileChange={setFile} />
+            <p className="text-xs text-muted-foreground">
+              Uploading a document or pasting text above makes the offer fields optional — Claude reads the vendor,
+              costs, and terms out of it for you.
+            </p>
           </div>
         </CardContent>
       </Card>
