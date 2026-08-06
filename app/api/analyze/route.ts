@@ -106,9 +106,16 @@ export async function POST(request: Request) {
   // --- Extract structured candidate values (AI-assisted, read-not-compute) --
   let mergedInput = explicitInput;
   let extractedFields: unknown = null;
-  if (documentText && decisionModule.extractInput) {
-    extractedFields = await decisionModule.extractInput(documentText, companyContext);
-    mergedInput = deepMergePreferOverride(extractedFields, explicitInput);
+  if (documentText) {
+    if (decisionModule.extractInput) {
+      extractedFields = await decisionModule.extractInput(documentText, companyContext);
+    }
+    // The raw parsed text is folded in as a fallback default (a module's
+    // buildPrompt uses `input.documentText` for qualitative reasoning, e.g.
+    // contract-risk detection) — explicit input always still wins, so a
+    // caller-provided documentText is never silently overwritten.
+    const extractedWithDocumentText = deepMergePreferOverride({ documentText }, extractedFields ?? {});
+    mergedInput = deepMergePreferOverride(extractedWithDocumentText, explicitInput);
   }
 
   // --- Validate the merged input before it reaches the deterministic engine -
