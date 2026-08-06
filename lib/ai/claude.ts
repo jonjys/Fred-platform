@@ -124,7 +124,14 @@ export interface ExtractStructuredDataParams<T> {
 const EXTRACTION_SYSTEM_PROMPT = `You extract structured data that is explicitly stated in a document. You never
 calculate, infer, estimate, or round a value that is not directly stated in the text. If a field is not present in
 the text, omit it rather than guessing. Respond with ONLY a single JSON object matching the required schema — no
-prose, no markdown code fences.`;
+prose, no markdown code fences.
+
+The document text was mechanically extracted from a PDF and has lost its original layout: tables, columns, and
+line items are often flattened into run-on or interleaved lines, numbers may be separated from their labels or
+currency symbols by unrelated text, and whitespace/line breaks do not reflect the visual structure. Read the whole
+text carefully before concluding a value is absent — a price is still "explicitly stated" even if pdf-to-text
+extraction mangled the spacing or column order around it. Only omit a field if the value truly cannot be found
+anywhere in the text, not merely because it isn't in a clean "label: value" format.`;
 
 /**
  * Generic AI-assisted extraction: turns raw document text into structured
