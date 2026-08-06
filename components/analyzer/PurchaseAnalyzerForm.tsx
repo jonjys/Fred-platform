@@ -91,8 +91,14 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     setError(null);
     setResult(null);
 
+    // decisionTitle isn't something extraction produces (it's a label, not
+    // a document fact) — so unlike the offer fields, a document attachment
+    // can't fill this one in server-side. Derive a reasonable default from
+    // the filename rather than blocking a PDF-only submission on it.
+    const title = decisionTitle.trim() || (file ? file.name.replace(/\.[^./]+$/, "") : "Untitled decision");
+
     const input = {
-      decisionTitle,
+      decisionTitle: title,
       primaryOffer: offerDraftToPayload(primaryOffer),
       // An empty array is a real value (deepMergePreferOverride replaces
       // arrays wholesale) and would wipe out any alternatives Claude
@@ -107,7 +113,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     const formData = new FormData();
     formData.set("moduleKey", "purchase-analysis");
     formData.set("companyId", companyId);
-    formData.set("title", decisionTitle);
+    formData.set("title", title);
     formData.set("input", JSON.stringify(input));
     if (file) {
       formData.set("file", file);
@@ -191,10 +197,10 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
             <Label htmlFor="decisionTitle">Decision title</Label>
             <Input
               id="decisionTitle"
-              required
+              required={!hasDocumentSource}
               value={decisionTitle}
               onChange={(event) => setDecisionTitle(event.target.value)}
-              placeholder="New CRM subscription"
+              placeholder={hasDocumentSource ? "Defaults to the file name if left blank" : "New CRM subscription"}
             />
           </div>
         </CardContent>
