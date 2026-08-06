@@ -51,7 +51,7 @@ describe("calculateTCO", () => {
     expect(result.monthlyRecurringCost).toBe(100);
   });
 
-  it("stops accruing recurring cost once the contract term ends", () => {
+  it("keeps accruing recurring cost past the initial contract term (assumes renewal)", () => {
     const result = calculateTCO({
       currency: "EUR",
       vatRate: 0,
@@ -59,13 +59,13 @@ describe("calculateTCO", () => {
       recurringMonthlyItems: [
         { label: "Subscription", amount: 100, category: "subscription", recurring: true, vatApplicable: false },
       ],
-      contractLengthMonths: 6, // contract ends after 6 months
+      contractLengthMonths: 6, // initial term is 6 months, but the subscription continues beyond it
     });
 
-    // year1 horizon is 12 months, but contract only runs 6
-    expect(result.year1.subtotalExclVat).toBe(600);
-    // year3 horizon is 36 months, contract still only runs 6
-    expect(result.year3.subtotalExclVat).toBe(600);
+    // year1 horizon is 12 months — a 6-month initial term doesn't cap it
+    expect(result.year1.subtotalExclVat).toBe(1200);
+    // year3 horizon is 36 months
+    expect(result.year3.subtotalExclVat).toBe(3600);
   });
 
   it("surfaces hidden fees separately in the result", () => {

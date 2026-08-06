@@ -61,3 +61,38 @@ export async function listDecisions(
   if (error) throw error;
   return data;
 }
+
+export interface ListDecisionsForUserParams {
+  moduleKey?: string;
+  status?: DecisionStatus;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Lists decisions across every company the signed-in user owns, without
+ * requiring a `companyId` — relies entirely on the `decisions_select_own`
+ * RLS policy (scoped via the owning company's `user_id`) rather than an
+ * explicit filter. Use this for account-wide views like `/history` and the
+ * dashboard's recent-decisions list; use `listDecisions` when the caller
+ * already knows which single company it cares about.
+ */
+export async function listDecisionsForUser(
+  supabase: SupabaseClient<Database>,
+  params: ListDecisionsForUserParams = {},
+): Promise<DecisionRow[]> {
+  const { moduleKey, status, limit = 20, offset = 0 } = params;
+
+  let query = supabase
+    .from("decisions")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (moduleKey) query = query.eq("module_key", moduleKey);
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}

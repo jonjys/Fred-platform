@@ -7,7 +7,10 @@ export interface PurchaseOffer {
   monthlyCost: number;
   /** One-off fees not disclosed in the headline price (integration, onboarding, mandatory add-ons...). */
   hiddenFees: number;
-  /** 0 = month-to-month / no commitment. */
+  /** Length of the initial committed term, in months (0 = month-to-month).
+   * Informational only — TCO projections assume the subscription continues
+   * for the full 1/3-year horizon regardless, since renewal is the default
+   * case. See `CalculateTCOParams.contractLengthMonths`. */
   contractLengthMonths: number;
   notes?: string;
 }

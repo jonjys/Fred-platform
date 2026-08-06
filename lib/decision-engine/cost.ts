@@ -50,10 +50,19 @@ export interface CalculateTCOParams {
   vatRate: number;
   /** Costs charged once, at the start (setup fees, upfront licence cost, one-time hidden fees). */
   oneOffItems: CostLineItem[];
-  /** Costs charged every month for as long as the contract is active. */
+  /** Costs charged every month for as long as the service is in use. */
   recurringMonthlyItems: CostLineItem[];
-  /** Length of the committed contract in months. `0` or negative is treated
-   * as month-to-month (recurring costs run for the full evaluation horizon). */
+  /**
+   * Length of the initial committed term, in months. This is informational
+   * (e.g. for negotiation leverage, or a future early-termination-penalty
+   * calculation) — it does NOT truncate the TCO projection. Recurring costs
+   * always accrue for the full evaluation horizon (12 / 36 months), because
+   * subscriptions are the default case and overwhelmingly renew rather than
+   * terminate at the end of an initial term; assuming otherwise silently
+   * understates 3-year cost for any contract shorter than 36 months. Model
+   * an actual planned cancellation via a lower `expectedMonthlyBenefit`
+   * horizon at the module level, not by shortening this projection.
+   */
   contractLengthMonths: number;
 }
 
@@ -62,15 +71,15 @@ const YEAR3_HORIZON_MONTHS = 36;
 
 /**
  * Projects Total Cost of Ownership over the two horizons the product always
- * reports: 1 year and 3 years. Recurring costs accrue for
- * min(horizon, contractLengthMonths) months — if a contract ends before the
- * horizon, we never invent a renewal cost.
+ * reports: 1 year and 3 years. Recurring costs accrue for the full horizon
+ * in both cases — see `CalculateTCOParams.contractLengthMonths` for why the
+ * contract term doesn't cap the projection.
  */
 export function calculateTCO(params: CalculateTCOParams): TCOResult {
-  const { currency, vatRate, oneOffItems, recurringMonthlyItems, contractLengthMonths } = params;
+  const { currency, vatRate, oneOffItems, recurringMonthlyItems } = params;
 
-  const year1 = projectHorizon(oneOffItems, recurringMonthlyItems, contractLengthMonths, YEAR1_HORIZON_MONTHS, vatRate, currency);
-  const year3 = projectHorizon(oneOffItems, recurringMonthlyItems, contractLengthMonths, YEAR3_HORIZON_MONTHS, vatRate, currency);
+  const year1 = projectHorizon(oneOffItems, recurringMonthlyItems, YEAR1_HORIZON_MONTHS, vatRate, currency);
+  const year3 = projectHorizon(oneOffItems, recurringMonthlyItems, YEAR3_HORIZON_MONTHS, vatRate, currency);
 
   const monthlyRecurringCost = round2(sum(recurringMonthlyItems.map((item) => item.amount)));
   const hiddenFeesTotal = round2(
@@ -83,17 +92,14 @@ export function calculateTCO(params: CalculateTCOParams): TCOResult {
 function projectHorizon(
   oneOffItems: CostLineItem[],
   recurringMonthlyItems: CostLineItem[],
-  contractLengthMonths: number,
   horizonMonths: number,
   vatRate: number,
   currency: CurrencyCode,
 ): TCOBreakdown {
-  const activeMonths = contractLengthMonths > 0 ? Math.min(horizonMonths, contractLengthMonths) : horizonMonths;
-
   const projectedRecurring: CostLineItem[] = recurringMonthlyItems.map((item) => ({
     ...item,
-    label: `${item.label} (${activeMonths} mo)`,
-    amount: round2(item.amount * activeMonths),
+    label: `${item.label} (${horizonMonths} mo)`,
+    amount: round2(item.amount * horizonMonths),
   }));
 
   return buildCostBreakdown([...oneOffItems, ...projectedRecurring], vatRate, currency);
