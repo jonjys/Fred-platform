@@ -107,9 +107,15 @@ export async function POST(request: Request) {
   let mergedInput = explicitInput;
   let extractedFields: unknown = null;
   if (documentText) {
+    console.log(
+      `[analyze] Parsed ${documentText.length} chars of document text. Preview: ${JSON.stringify(documentText.slice(0, 300))}`,
+    );
+
     if (decisionModule.extractInput) {
       extractedFields = await decisionModule.extractInput(documentText, companyContext);
+      console.log(`[analyze] Extraction result: ${JSON.stringify(extractedFields)}`);
     }
+
     // The raw parsed text is folded in as a fallback default (a module's
     // buildPrompt uses `input.documentText` for qualitative reasoning, e.g.
     // contract-risk detection) — explicit input always still wins, so a
@@ -121,8 +127,16 @@ export async function POST(request: Request) {
   // --- Validate the merged input before it reaches the deterministic engine -
   const inputResult = decisionModule.inputSchema.safeParse(mergedInput);
   if (!inputResult.success) {
+    // Numbers must come from either the document or the user, never a
+    // guess — so a validation failure after extraction ran isn't a bug,
+    // it's the module correctly declining to invent what it couldn't find.
+    // Say so explicitly rather than surfacing a bare Zod dump.
+    const extractionNote = documentText
+      ? " Claude could not find these values in the attached document — please enter them manually, or check that the document contains selectable text (not a scanned image)."
+      : "";
+
     return NextResponse.json(
-      { error: "Input failed validation", issues: inputResult.error.issues },
+      { error: `Input failed validation.${extractionNote}`, issues: inputResult.error.issues },
       { status: 400 },
     );
   }
