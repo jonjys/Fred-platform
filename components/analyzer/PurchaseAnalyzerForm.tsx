@@ -11,21 +11,21 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "./FileDropzone";
 import { emptyOfferDraft, OfferFieldset, type OfferDraft } from "./OfferFieldset";
-import { ResultsView, type PurchaseDecisionResult } from "@/components/results/ResultsView";
+import {
+  ResultsView,
+  toPurchaseDecisionResult,
+  type PurchaseDecisionResult,
+  type PurchaseDecisionResultSource,
+} from "@/components/results/ResultsView";
 
 interface CompanyOption {
   id: string;
   companyName: string;
 }
 
-interface AnalyzeApiDecision {
+interface AnalyzeApiDecision extends PurchaseDecisionResultSource {
   status: "draft" | "processing" | "completed" | "failed" | "archived";
   error: string | null;
-  verdict: unknown;
-  deterministic_metrics: unknown;
-  ai_analysis: unknown;
-  risks: unknown;
-  recommended_actions: unknown;
 }
 
 function offerDraftToPayload(draft: OfferDraft) {
@@ -85,14 +85,14 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         return;
       }
 
-      const decision = body.decision;
-      setResult({
-        verdict: decision.verdict as PurchaseDecisionResult["verdict"],
-        metrics: decision.deterministic_metrics as PurchaseDecisionResult["metrics"],
-        aiAnalysis: decision.ai_analysis as PurchaseDecisionResult["aiAnalysis"],
-        risks: (decision.risks ?? []) as PurchaseDecisionResult["risks"],
-        recommendedActions: (decision.recommended_actions ?? []) as PurchaseDecisionResult["recommendedActions"],
-      });
+      const mapped = toPurchaseDecisionResult(body.decision);
+      if (!mapped) {
+        setStatus("error");
+        setError("Analysis completed but returned no result — please try again.");
+        return;
+      }
+
+      setResult(mapped);
       setStatus("idle");
     } catch {
       setStatus("error");

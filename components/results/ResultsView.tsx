@@ -14,6 +14,32 @@ export interface PurchaseDecisionResult {
   recommendedActions: RecommendedAction[];
 }
 
+/** Structural shape shared by a `decisions` DB row and the JSON
+ * `POST /api/analyze` returns (the latter is just the former, serialized) —
+ * lets both the analyze form's fetch response and the history pages' server-
+ * fetched rows go through the same mapping. */
+export interface PurchaseDecisionResultSource {
+  verdict: unknown;
+  deterministic_metrics: unknown;
+  ai_analysis: unknown;
+  risks: unknown;
+  recommended_actions: unknown;
+}
+
+/** Returns `null` when the decision hasn't completed yet (still processing,
+ * or failed) — those states have no verdict/metrics/AI analysis to show. */
+export function toPurchaseDecisionResult(source: PurchaseDecisionResultSource): PurchaseDecisionResult | null {
+  if (!source.verdict || !source.deterministic_metrics || !source.ai_analysis) return null;
+
+  return {
+    verdict: source.verdict as Verdict,
+    metrics: source.deterministic_metrics as PurchaseAnalysisMetrics,
+    aiAnalysis: source.ai_analysis as PurchaseAnalysisAiOutput,
+    risks: (source.risks ?? []) as Risk[],
+    recommendedActions: (source.recommended_actions ?? []) as RecommendedAction[],
+  };
+}
+
 /** Composes the generic result primitives (verdict/risks/actions) with the
  * purchase-analysis-specific financial breakdown into one result screen. */
 export function ResultsView({ result }: { result: PurchaseDecisionResult }) {

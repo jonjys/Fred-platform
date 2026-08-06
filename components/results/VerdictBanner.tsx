@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2, MinusCircle } from "lucide-react";
 import type { Verdict, VerdictSeverity } from "@/lib/decision-engine/types";
 import { cn, formatPercentage } from "@/lib/utils";
+import { VERDICT_SEVERITY_STYLES } from "./verdict-colors";
 
 /**
  * Renders any module's `Verdict` — colored purely by `severity`
@@ -9,30 +10,15 @@ import { cn, formatPercentage } from "@/lib/utils";
  * future module's differently-worded verdict tomorrow without a code
  * change here.
  */
-const SEVERITY_STYLES: Record<VerdictSeverity, { bg: string; border: string; text: string; icon: typeof CheckCircle2 }> = {
-  positive: {
-    bg: "bg-emerald-50 dark:bg-emerald-950/40",
-    border: "border-emerald-300 dark:border-emerald-800",
-    text: "text-emerald-700 dark:text-emerald-400",
-    icon: CheckCircle2,
-  },
-  neutral: {
-    bg: "bg-amber-50 dark:bg-amber-950/40",
-    border: "border-amber-300 dark:border-amber-800",
-    text: "text-amber-700 dark:text-amber-400",
-    icon: MinusCircle,
-  },
-  negative: {
-    bg: "bg-red-50 dark:bg-red-950/40",
-    border: "border-red-300 dark:border-red-800",
-    text: "text-red-700 dark:text-red-400",
-    icon: AlertTriangle,
-  },
+const SEVERITY_ICON: Record<VerdictSeverity, typeof CheckCircle2> = {
+  positive: CheckCircle2,
+  neutral: MinusCircle,
+  negative: AlertTriangle,
 };
 
 export function VerdictBanner({ verdict }: { verdict: Verdict }) {
-  const style = SEVERITY_STYLES[verdict.severity];
-  const Icon = style.icon;
+  const style = VERDICT_SEVERITY_STYLES[verdict.severity];
+  const Icon = SEVERITY_ICON[verdict.severity];
 
   return (
     <div className={cn("rounded-xl border p-5", style.bg, style.border)}>
