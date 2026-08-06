@@ -27,9 +27,20 @@ interface OfferFieldsetProps {
   value: OfferDraft;
   onChange: (value: OfferDraft) => void;
   onRemove?: () => void;
+  /** Whether vendor/cost fields are required to submit. Set to `false` when
+   * a document (PDF/pasted text) is attached, so extraction can fill these
+   * in instead of the browser blocking submission on empty fields. */
+  required?: boolean;
 }
 
-export function OfferFieldset({ idPrefix, title, value, onChange, onRemove }: OfferFieldsetProps) {
+export function OfferFieldset({
+  idPrefix,
+  title,
+  value,
+  onChange,
+  onRemove,
+  required = true,
+}: OfferFieldsetProps) {
   function set<K extends keyof OfferDraft>(key: K, fieldValue: OfferDraft[K]) {
     onChange({ ...value, [key]: fieldValue });
   }
@@ -50,7 +61,7 @@ export function OfferFieldset({ idPrefix, title, value, onChange, onRemove }: Of
         <Label htmlFor={`${idPrefix}-vendorName`}>Vendor name</Label>
         <Input
           id={`${idPrefix}-vendorName`}
-          required
+          required={required}
           value={value.vendorName}
           onChange={(event) => set("vendorName", event.target.value)}
           placeholder="Acme SaaS Inc."
@@ -65,7 +76,7 @@ export function OfferFieldset({ idPrefix, title, value, onChange, onRemove }: Of
             type="number"
             min={0}
             step="0.01"
-            required
+            required={required}
             value={value.upfrontCost}
             onChange={(event) => set("upfrontCost", event.target.value)}
             placeholder="0"
@@ -78,7 +89,7 @@ export function OfferFieldset({ idPrefix, title, value, onChange, onRemove }: Of
             type="number"
             min={0}
             step="0.01"
-            required
+            required={required}
             value={value.monthlyCost}
             onChange={(event) => set("monthlyCost", event.target.value)}
             placeholder="0"
