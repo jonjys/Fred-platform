@@ -68,6 +68,23 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
   // only source of truth, so the browser should still catch empty fields.
   const hasDocumentSource = Boolean(file) || documentText.trim().length > 0;
 
+  /** "Run another analysis" must start from a genuinely blank form —
+   * otherwise a file/pasted text left over from a previous run silently
+   * rides along into the next one and gets analyzed as if it belonged to
+   * it. Only the selected company carries over. */
+  function resetForm() {
+    setDecisionTitle("");
+    setPrimaryOffer(emptyOfferDraft());
+    setAlternativeOffers([]);
+    setVatRateOverride("");
+    setExpectedMonthlyBenefit("");
+    setDocumentText("");
+    setFile(null);
+    setStatus("idle");
+    setError(null);
+    setResult(null);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setStatus("submitting");
@@ -136,7 +153,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
   if (result) {
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => setResult(null)}>
+        <Button variant="outline" size="sm" onClick={resetForm}>
           ← Run another analysis
         </Button>
         <ResultsView result={result} />
