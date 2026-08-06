@@ -13,7 +13,7 @@ import type { ZodType } from "zod";
 import type { CompanyContext, DecisionModule } from "@/lib/decision-engine/types";
 import { withPlatformGuardrails } from "./prompts";
 
-const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-3-5-sonnet-20241022";
+const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MAX_RETRIES = 2;
 
