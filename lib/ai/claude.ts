@@ -47,6 +47,10 @@ export interface RunStructuredAnalysisParams<T> {
   schema: ZodType<T>;
   maxRetries?: number;
   maxTokens?: number;
+  /** Short tag included in diagnostic logs (e.g. "purchase-analysis:extract")
+   * so multiple structured calls within one request are distinguishable in
+   * Vercel logs. */
+  label?: string;
 }
 
 /**
@@ -56,7 +60,7 @@ export interface RunStructuredAnalysisParams<T> {
  * falling back to unvalidated data.
  */
 export async function runStructuredAnalysis<T>(params: RunStructuredAnalysisParams<T>): Promise<T> {
-  const { system, user, schema, maxRetries = DEFAULT_MAX_RETRIES, maxTokens = DEFAULT_MAX_TOKENS } = params;
+  const { system, user, schema, maxRetries = DEFAULT_MAX_RETRIES, maxTokens = DEFAULT_MAX_TOKENS, label = "claude" } = params;
   const anthropic = getClient();
 
   let lastError: unknown;
@@ -71,6 +75,12 @@ export async function runStructuredAnalysis<T>(params: RunStructuredAnalysisPara
     });
 
     const rawText = extractText(response);
+    // The single most useful diagnostic line when a structured call
+    // "succeeds" but returns less than expected — a schema with every field
+    // optional (like extraction's) can't distinguish "found nothing" from
+    // "found everything" without seeing what Claude actually said.
+    console.log(`[${label}] attempt ${attempt} stop_reason=${response.stop_reason} raw response: ${rawText}`);
+
     const parsed = tryParseJson(rawText);
 
     if (parsed === undefined) {
@@ -84,6 +94,7 @@ export async function runStructuredAnalysis<T>(params: RunStructuredAnalysisPara
       return result.data;
     }
 
+    console.log(`[${label}] attempt ${attempt} schema validation failed: ${JSON.stringify(result.error.issues)}`);
     lastError = new AiOutputValidationError("AI response failed schema validation.", result.error.issues);
     currentUserMessage = `${user}\n\nYour previous response failed validation with these issues:\n${JSON.stringify(
       result.error.issues,
@@ -119,6 +130,8 @@ export interface ExtractStructuredDataParams<T> {
    * in months." */
   instructions: string;
   schema: ZodType<T>;
+  /** Diagnostic log tag, e.g. "purchase-analysis:extract". */
+  label?: string;
 }
 
 const EXTRACTION_SYSTEM_PROMPT = `You extract structured data that is explicitly stated in a document. You never
@@ -126,12 +139,13 @@ calculate, infer, estimate, or round a value that is not directly stated in the 
 the text, omit it rather than guessing. Respond with ONLY a single JSON object matching the required schema — no
 prose, no markdown code fences.
 
-The document text was mechanically extracted from a PDF and has lost its original layout: tables, columns, and
-line items are often flattened into run-on or interleaved lines, numbers may be separated from their labels or
-currency symbols by unrelated text, and whitespace/line breaks do not reflect the visual structure. Read the whole
-text carefully before concluding a value is absent — a price is still "explicitly stated" even if pdf-to-text
-extraction mangled the spacing or column order around it. Only omit a field if the value truly cannot be found
-anywhere in the text, not merely because it isn't in a clean "label: value" format.`;
+The document text may be mechanically extracted from a PDF, in which case it can lose its original layout: tables,
+columns, and line items are sometimes flattened into run-on or interleaved lines, numbers may be separated from
+their labels or currency symbols by unrelated text, and whitespace/line breaks do not reliably reflect the visual
+structure. Read the whole text carefully before concluding a value is absent — a price is still "explicitly stated"
+even if formatting around it looks mangled, and plenty of documents (including plain pasted text) state values in
+simple, direct sentences like "Upfront cost: 500 EUR" that should be extracted immediately. Only omit a field if the
+value truly cannot be found anywhere in the text.`;
 
 /**
  * Generic AI-assisted extraction: turns raw document text into structured
@@ -141,12 +155,13 @@ anywhere in the text, not merely because it isn't in a clean "label: value" form
  * the qualitative analysis/verdict.
  */
 export async function extractStructuredData<T>(params: ExtractStructuredDataParams<T>): Promise<T> {
-  const { text, instructions, schema } = params;
+  const { text, instructions, schema, label = "extract" } = params;
 
   return runStructuredAnalysis({
     system: EXTRACTION_SYSTEM_PROMPT,
     user: `Extract the following from the document text below: ${instructions}\n\nDOCUMENT TEXT\n${text}`,
     schema,
+    label,
   });
 }
 
@@ -167,5 +182,6 @@ export async function runModuleAiAnalysis<TInput, TMetrics, TAiOutput>(
     system: withPlatformGuardrails(system),
     user,
     schema: module.aiOutputSchema,
+    label: `${module.key}:analyze`,
   });
 }

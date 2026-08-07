@@ -16,5 +16,6 @@ export async function extractPurchaseInputFromText(
     text,
     instructions: EXTRACTION_INSTRUCTIONS,
     schema: purchaseAnalysisExtractionSchema,
+    label: "purchase-analysis:extract",
   });
 }
