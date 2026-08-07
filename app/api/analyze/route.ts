@@ -18,7 +18,7 @@ import { toCompanyContext, getCompanyById } from "@/lib/database/repositories/co
 import { createDecision, updateDecision } from "@/lib/database/repositories/decisions";
 import { createDecisionDocument } from "@/lib/database/repositories/documents";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
-import { parseFile, parsePastedText, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
+import { parseFile, parsePastedText, UnparsablePdfError, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
 import { deepMergePreferOverride } from "@/lib/decision-engine/merge";
 
 export const runtime = "nodejs";
@@ -103,7 +103,8 @@ export async function POST(request: Request) {
       documentText = parsedDocument.text;
     }
   } catch (error) {
-    if (error instanceof UnsupportedDocumentTypeError) {
+    if (error instanceof UnsupportedDocumentTypeError || error instanceof UnparsablePdfError) {
+      console.error(`[analyze] Document parsing failed: ${error.message}`);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     throw error;
