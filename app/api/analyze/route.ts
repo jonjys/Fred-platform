@@ -22,6 +22,12 @@ import { parseFile, parsePastedText, UnsupportedDocumentTypeError } from "@/lib/
 import { deepMergePreferOverride } from "@/lib/decision-engine/merge";
 
 export const runtime = "nodejs";
+// This pipeline makes up to two sequential Claude calls (extraction, then
+// the main analysis), each retried up to twice on validation failure —
+// comfortably past Vercel's default serverless timeout (10-15s) on a slow
+// run, which kills the function mid-request and surfaces to the browser as
+// an opaque fetch/network error rather than a real response.
+export const maxDuration = 60;
 
 const requestEnvelopeSchema = z.object({
   moduleKey: z.string().min(1),
