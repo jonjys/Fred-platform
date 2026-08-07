@@ -129,6 +129,17 @@ export interface ExtractStructuredDataParams<T> {
    * vendor's upfront cost, monthly subscription cost, and contract length
    * in months." */
   instructions: string;
+  /**
+   * The exact JSON shape Claude must return, as a human-readable schema
+   * description (field names, nesting, types) — e.g.:
+   * `{ "primaryOffer": { "vendorName"?: string, "upfrontCost"?: number } }`.
+   * Required, not optional: without seeing the target shape, Claude has to
+   * guess field names/nesting from `instructions` alone, which in practice
+   * means it silently gives up and returns `{}` — a schema with every field
+   * optional validates that trivially, so the failure never surfaces as an
+   * error, only as data that never arrived.
+   */
+  outputShape: string;
   schema: ZodType<T>;
   /** Diagnostic log tag, e.g. "purchase-analysis:extract". */
   label?: string;
@@ -136,8 +147,8 @@ export interface ExtractStructuredDataParams<T> {
 
 const EXTRACTION_SYSTEM_PROMPT = `You extract structured data that is explicitly stated in a document. You never
 calculate, infer, estimate, or round a value that is not directly stated in the text. If a field is not present in
-the text, omit it rather than guessing. Respond with ONLY a single JSON object matching the required schema — no
-prose, no markdown code fences.
+the text, omit it rather than guessing. Respond with ONLY a single JSON object matching the exact shape given to
+you — no prose, no markdown code fences.
 
 The document text may be mechanically extracted from a PDF, in which case it can lose its original layout: tables,
 columns, and line items are sometimes flattened into run-on or interleaved lines, numbers may be separated from
@@ -155,11 +166,18 @@ value truly cannot be found anywhere in the text.`;
  * the qualitative analysis/verdict.
  */
 export async function extractStructuredData<T>(params: ExtractStructuredDataParams<T>): Promise<T> {
-  const { text, instructions, schema, label = "extract" } = params;
+  const { text, instructions, outputShape, schema, label = "extract" } = params;
 
   return runStructuredAnalysis({
     system: EXTRACTION_SYSTEM_PROMPT,
-    user: `Extract the following from the document text below: ${instructions}\n\nDOCUMENT TEXT\n${text}`,
+    user: `Extract the following from the document text below: ${instructions}
+
+Respond with ONLY a JSON object matching this exact shape. Every field is optional — omit whatever you can't find;
+never include null or empty-string placeholders for missing values:
+${outputShape}
+
+DOCUMENT TEXT
+${text}`,
     schema,
     label,
   });

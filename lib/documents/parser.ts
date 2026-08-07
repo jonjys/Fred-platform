@@ -61,10 +61,29 @@ export class UnsupportedDocumentTypeError extends Error {
   }
 }
 
+/** A file had the right MIME type but pdf-parse (pdfjs-dist under the hood)
+ * couldn't actually read it — corrupted, password-protected, or using a
+ * compression/encoding pdf.js doesn't support. Distinct from
+ * `UnsupportedDocumentTypeError` (wrong kind of file) so callers can give an
+ * accurate message instead of letting the raw pdfjs exception crash the
+ * request with an uncaught 500. */
+export class UnparsablePdfError extends Error {
+  constructor(cause: unknown) {
+    super(
+      `This PDF could not be read (${cause instanceof Error ? cause.message : String(cause)}). It may be corrupted, password-protected, or use an unsupported encoding — try re-exporting/re-saving it, or paste the text instead.`,
+    );
+    this.name = "UnparsablePdfError";
+  }
+}
+
 async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   // Lazily imported so pdf-parse (a Node-only dependency) is never pulled
   // into any bundle that isn't actually parsing a PDF.
   const pdfParse = (await import("pdf-parse")).default;
-  const result = await pdfParse(buffer);
-  return result.text;
+  try {
+    const result = await pdfParse(buffer);
+    return result.text;
+  } catch (error) {
+    throw new UnparsablePdfError(error);
+  }
 }
