@@ -2,12 +2,7 @@
 "use client";
 
 import { AlertTriangle, AlertOctagon, Info } from "lucide-react";
-
-interface Risk {
-  severity: "low" | "medium" | "high" | "critical" | string;
-  category: string;
-  description: string;
-}
+import type { Risk } from "@/lib/decision-engine/types";
 
 interface RiskCardsProps {
   risks: Risk[];
