@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, Upload, FileText, Plus } from "lucide-react";
+import { Loader2, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ interface CompanyOption {
 }
 
 export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[] }) {
-  const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
+  const [companyId] = useState(companies[0]?.id ?? "");
   const [decisionTitle, setDecisionTitle] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [upfrontCost, setUpfrontCost] = useState("");
@@ -27,7 +27,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,8 +68,12 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
 
       const data = await res.json();
       setResult(data.result);
-    } catch (err: any) {
-      setError(err.message || "Ett oväntat fel uppstod.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ett oväntat fel uppstod.");
+      }
     } finally {
       setIsLoading(false);
     }
