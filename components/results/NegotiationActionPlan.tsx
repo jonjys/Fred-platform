@@ -1,34 +1,46 @@
-import { ArrowRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { RecommendedAction } from "@/lib/decision-engine/types";
+// components/results/NegotiationActionPlan.tsx
+"use client";
 
-/** Generic over `RecommendedAction[]` — a future module's "next steps" or
- * "due diligence checklist" render through the same component. */
-export function NegotiationActionPlan({ actions }: { actions: RecommendedAction[] }) {
-  if (actions.length === 0) {
-    return <p className="text-sm text-muted-foreground">No specific action points were generated.</p>;
+import { CheckCircle2, ArrowRight } from "lucide-react";
+
+interface ActionItem {
+  type: string;
+  description: string;
+  potentialImpact?: string;
+}
+
+interface NegotiationActionPlanProps {
+  plan: ActionItem[];
+}
+
+export function NegotiationActionPlan({ plan }: NegotiationActionPlanProps) {
+  if (!plan || plan.length === 0) {
+    return (
+      <div className="p-4 rounded-lg bg-slate-950/40 border border-slate-800/60 text-slate-400 text-xs">
+        Inga specifika åtgärdspunkter angivna.
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2">
-      {actions.map((action, index) => (
-        <Card key={index}>
-          <CardContent className="flex items-start gap-3 pt-4">
-            <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs font-normal">
-                  {action.type.replace(/_/g, " ")}
-                </Badge>
-              </div>
-              <p className="text-sm">{action.description}</p>
-              {action.potentialImpact && (
-                <p className="text-xs text-muted-foreground">Potential impact: {action.potentialImpact}</p>
-              )}
+    <div className="space-y-3">
+      {plan.map((item, index) => (
+        <div
+          key={index}
+          className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors space-y-2"
+        >
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="uppercase tracking-wider">{item.type}</span>
+          </div>
+          <p className="text-xs leading-relaxed text-slate-200">{item.description}</p>
+          {item.potentialImpact && (
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+              <ArrowRight className="w-3 h-3 text-emerald-500" />
+              <span>Förväntad effekt: <strong className="text-slate-300">{item.potentialImpact}</strong></span>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       ))}
     </div>
   );
