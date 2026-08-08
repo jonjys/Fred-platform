@@ -1,41 +1,72 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { Risk, RiskSeverity } from "@/lib/decision-engine/types";
-import { cn } from "@/lib/utils";
+// components/results/RiskCards.tsx
+"use client";
 
-const SEVERITY_ORDER: RiskSeverity[] = ["critical", "high", "medium", "low"];
+import { AlertTriangle, AlertOctagon, Info } from "lucide-react";
 
-const SEVERITY_BADGE_CLASS: Record<RiskSeverity, string> = {
-  critical: "bg-red-600 text-white hover:bg-red-600",
-  high: "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-950 dark:text-red-300",
-  medium: "bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300",
-  low: "bg-secondary text-secondary-foreground hover:bg-secondary",
-};
+interface Risk {
+  severity: "low" | "medium" | "high" | "critical" | string;
+  category: string;
+  description: string;
+}
 
-/** Generic over `Risk[]` — works for any module's AI-identified risks, not
- * just contract risks from purchase-analysis. */
-export function RiskCards({ risks }: { risks: Risk[] }) {
-  if (risks.length === 0) {
-    return <p className="text-sm text-muted-foreground">No significant risks were identified.</p>;
+interface RiskCardsProps {
+  risks: Risk[];
+}
+
+export function RiskCards({ risks }: RiskCardsProps) {
+  if (!risks || risks.length === 0) {
+    return (
+      <div className="p-4 rounded-lg bg-slate-950/40 border border-slate-800/60 text-slate-400 text-xs">
+        Inga uppenbara avtalsrisker identifierade.
+      </div>
+    );
   }
 
-  const sorted = [...risks].sort(
-    (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
-  );
+  const getSeverityStyle = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case "critical":
+      case "high":
+        return {
+          border: "border-rose-500/30 bg-rose-950/20 text-rose-300",
+          badge: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+          icon: <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />,
+        };
+      case "medium":
+        return {
+          border: "border-amber-500/30 bg-amber-950/20 text-amber-300",
+          badge: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+          icon: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />,
+        };
+      default:
+        return {
+          border: "border-slate-800 bg-slate-950/40 text-slate-300",
+          badge: "bg-slate-800 text-slate-400 border-slate-700",
+          icon: <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />,
+        };
+    }
+  };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {sorted.map((risk, index) => (
-        <Card key={index} className={cn(risk.severity === "critical" && "border-red-600")}>
-          <CardContent className="space-y-2 pt-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">{risk.category}</span>
-              <Badge className={SEVERITY_BADGE_CLASS[risk.severity]}>{risk.severity}</Badge>
+    <div className="space-y-3">
+      {risks.map((risk, index) => {
+        const style = getSeverityStyle(risk.severity);
+        return (
+          <div
+            key={index}
+            className={`p-4 rounded-xl border ${style.border} flex items-start gap-3 transition-colors`}
+          >
+            {style.icon}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.badge}`}>
+                  {risk.category || risk.severity}
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-300">{risk.description}</p>
             </div>
-            <p className="text-sm text-muted-foreground">{risk.description}</p>
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
