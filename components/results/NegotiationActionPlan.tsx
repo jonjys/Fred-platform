@@ -2,12 +2,7 @@
 "use client";
 
 import { CheckCircle2, ArrowRight } from "lucide-react";
-
-interface ActionItem {
-  type: string;
-  description: string;
-  potentialImpact?: string;
-}
+import type { ActionItem } from "@/lib/decision-engine/types";
 
 interface NegotiationActionPlanProps {
   plan: ActionItem[];
@@ -31,7 +26,7 @@ export function NegotiationActionPlan({ plan }: NegotiationActionPlanProps) {
         >
           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span className="uppercase tracking-wider">{item.type}</span>
+            <span className="uppercase tracking-wider">{item.type.replace(/_/g, " ")}</span>
           </div>
           <p className="text-xs leading-relaxed text-slate-200">{item.description}</p>
           {item.potentialImpact && (
