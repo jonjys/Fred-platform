@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ResultsView } from "@/components/results/ResultsView";
+import type { PurchaseAnalysisResult } from "@/lib/decision-engine/modules/purchase-analysis/types";
 
 interface CompanyOption {
   id: string;
@@ -27,7 +28,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [result, setResult] = useState<PurchaseAnalysisResult | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +40,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
       formData.append("moduleKey", "purchase-analysis");
       formData.append("companyId", companyId);
       formData.append("title", decisionTitle || `Analys: ${vendorName || "Nytt avtal"}`);
-      
+
       const inputPayload = {
         primaryOffer: {
           vendorName: vendorName || undefined,
@@ -67,7 +68,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
       }
 
       const data = await res.json();
-      setResult(data.result);
+      setResult(data.result as PurchaseAnalysisResult);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -95,7 +96,6 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Fil-uppladdning */}
         <div className="space-y-2">
           <Label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
             1. Ladda upp Offert / Avtal (Valfritt)
@@ -118,7 +118,6 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
           </div>
         </div>
 
-        {/* Grunddata */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-xs text-slate-300">Rubrik / Beslutets namn</Label>
@@ -143,7 +142,6 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
           </div>
         </div>
 
-        {/* Kostnader */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="upfront" className="text-[11px] text-slate-400">Startkostnad</Label>
@@ -194,7 +192,6 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
           </div>
         </div>
 
-        {/* Anteckningar */}
         <div className="space-y-2">
           <Label htmlFor="notes" className="text-xs text-slate-300">Särskilda kontext eller frågeställningar</Label>
           <Textarea
