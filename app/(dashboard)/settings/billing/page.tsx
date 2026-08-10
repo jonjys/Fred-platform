@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
+import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
 import { UpgradeButton } from "@/components/billing/UpgradeButton";
 import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
@@ -80,9 +81,14 @@ export default async function BillingPage({
               : `${profile.trial_credits} trial ${profile.trial_credits === 1 ? "analysis" : "analyses"} remaining.`}
           </CardDescription>
         </CardHeader>
-        {!isActive && (
-          <CardContent>
-            <UpgradeButton />
+        {(!isActive || profile.stripe_customer_id) && (
+          <CardContent className="flex flex-wrap gap-3">
+            {!isActive && <UpgradeButton />}
+            {/* Only a customer who's been through checkout at least once has
+             * a Stripe customer id — the portal needs one to open. Shown
+             * regardless of current status so a canceled subscriber can
+             * still reach their invoice history. */}
+            {profile.stripe_customer_id && <ManageSubscriptionButton />}
           </CardContent>
         )}
       </Card>
