@@ -356,3 +356,79 @@ create policy "company_module_access_select_own" on company_module_access
   for select using (
     exists (select 1 from companies c where c.id = company_module_access.company_id and c.user_id = auth.uid())
   );
+
+-- =============================================================================
+-- profiles  (per-user billing/usage state — trial credits + Stripe subscription)
+-- =============================================================================
+-- Deliberately separate from `companies`: billing is per Supabase auth user
+-- (one login = one bill), while a user may own several companies (AI
+-- Wallets). Keeping them apart means multi-company users are never
+-- accidentally charged or gated per-company.
+create table profiles (
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid not null references auth.users(id) on delete cascade unique,
+
+  trial_credits         int not null default 5,
+  stripe_customer_id    text unique,
+  subscription_status   text not null default 'trial'
+    check (subscription_status in ('trial', 'active', 'canceled')),
+
+  created_at            timestamptz not null default now()
+);
+
+create index profiles_stripe_customer_id_idx on profiles(stripe_customer_id);
+
+alter table profiles enable row level security;
+
+create policy "profiles_select_own" on profiles
+  for select using (user_id = auth.uid());
+-- Insert is needed client/server-session-side too: getOrCreateProfile runs
+-- as the signed-in user (not service-role) so existing users who signed up
+-- before this table existed can lazily get a profile on first use.
+create policy "profiles_insert_own" on profiles
+  for insert with check (user_id = auth.uid());
+create policy "profiles_update_own" on profiles
+  for update using (user_id = auth.uid());
+
+-- Auto-provisions a profile the moment a Supabase auth user is created, so
+-- new signups never hit the lazy-create fallback at all. SECURITY DEFINER
+-- is required here: this trigger fires as a side effect of an insert into
+-- auth.users, a schema the signing-up user has no direct privileges on.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (user_id) values (new.id)
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Atomic "spend one trial credit" — a plain client-side
+-- update({trial_credits: n - 1}) would race under concurrent requests from
+-- the same user; this does the decrement and the "don't go below zero"
+-- guard in a single statement. Returns the updated row, or no row if the
+-- user had no credits left (caller should treat that as already-gated).
+create or replace function public.decrement_trial_credit(p_user_id uuid)
+returns public.profiles
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  updated_row public.profiles;
+begin
+  update public.profiles
+    set trial_credits = trial_credits - 1
+    where user_id = p_user_id and trial_credits > 0
+    returning * into updated_row;
+  return updated_row;
+end;
+$$;
+
+grant execute on function public.decrement_trial_credit(uuid) to authenticated;

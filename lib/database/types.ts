@@ -10,6 +10,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type DecisionStatus = "draft" | "processing" | "completed" | "failed" | "archived";
 export type DecisionEntityType = "vendor" | "supplier" | "product" | "service" | "contract_party" | "other";
+export type ProfileSubscriptionStatus = "trial" | "active" | "canceled";
 
 export interface Database {
   public: {
@@ -264,8 +265,49 @@ export interface Database {
         };
         Relationships: [];
       };
+      profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          trial_credits: number;
+          stripe_customer_id: string | null;
+          subscription_status: ProfileSubscriptionStatus;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          trial_credits?: number;
+          stripe_customer_id?: string | null;
+          subscription_status?: ProfileSubscriptionStatus;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          trial_credits?: number;
+          stripe_customer_id?: string | null;
+          subscription_status?: ProfileSubscriptionStatus;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      decrement_trial_credit: {
+        Args: { p_user_id: string };
+        // Non-SETOF composite return: a single row, or null when the
+        // WHERE clause matched nothing (i.e. no credits left to spend).
+        Returns: {
+          id: string;
+          user_id: string;
+          trial_credits: number;
+          stripe_customer_id: string | null;
+          subscription_status: ProfileSubscriptionStatus;
+          created_at: string;
+        } | null;
+      };
+    };
   };
 }
