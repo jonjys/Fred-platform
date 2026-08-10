@@ -382,13 +382,16 @@ alter table profiles enable row level security;
 
 create policy "profiles_select_own" on profiles
   for select using (user_id = auth.uid());
--- Insert is needed client/server-session-side too: getOrCreateProfile runs
--- as the signed-in user (not service-role) so existing users who signed up
--- before this table existed can lazily get a profile on first use.
-create policy "profiles_insert_own" on profiles
-  for insert with check (user_id = auth.uid());
-create policy "profiles_update_own" on profiles
-  for update using (user_id = auth.uid());
+-- Deliberately NO insert/update policy for the signed-in user. Every column
+-- on this row (trial_credits, subscription_status, stripe_customer_id) is
+-- billing-sensitive: an update-own policy that only checks `user_id =
+-- auth.uid()` would let any authenticated client PATCH their own row via
+-- Supabase's REST API straight to `subscription_status = 'active'`,
+-- bypassing Stripe entirely. All writes go through SECURITY DEFINER paths
+-- instead: the `handle_new_user` trigger (insert), the service-role client
+-- in getOrCreateProfile's fallback insert, the Stripe webhook (service-role
+-- update), and the `decrement_trial_credit` / `consume_monthly_analysis`
+-- functions below (definer-scoped mutation, not a raw table grant).
 
 -- Auto-provisions a profile the moment a Supabase auth user is created, so
 -- new signups never hit the lazy-create fallback at all. SECURITY DEFINER
