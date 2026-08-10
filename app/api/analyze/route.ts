@@ -14,10 +14,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDecisionModule } from "@/config/tools";
 import { AiOutputValidationError, runModuleAiAnalysis } from "@/lib/ai/claude";
+import { UPGRADE_PLAN } from "@/lib/billing/plan";
+import { currentMonthlyUsage } from "@/lib/billing/usage";
 import { toCompanyContext, getCompanyById } from "@/lib/database/repositories/companies";
 import { createDecision, updateDecision } from "@/lib/database/repositories/decisions";
 import { createDecisionDocument } from "@/lib/database/repositories/documents";
-import { decrementTrialCredit, getOrCreateProfile } from "@/lib/database/repositories/profiles";
+import { consumeMonthlyAnalysis, decrementTrialCredit, getOrCreateProfile } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import { parseFile, parsePastedText, UnparsablePdfError, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
 import { deepMergePreferOverride } from "@/lib/decision-engine/merge";
@@ -55,7 +57,14 @@ export async function POST(request: Request) {
   // calls, so a gated request never pays for document parsing either. -------
   const profile = await getOrCreateProfile(supabase, user.id);
   const isSubscriptionActive = profile.subscription_status === "active";
-  if (!isSubscriptionActive && profile.trial_credits <= 0) {
+  if (isSubscriptionActive) {
+    if (currentMonthlyUsage(profile) >= UPGRADE_PLAN.monthlyAnalysisLimit) {
+      return NextResponse.json(
+        { error: `Monthly limit reached (${UPGRADE_PLAN.monthlyAnalysisLimit} analyses) — resets next month.`, billingUrl: "/settings/billing" },
+        { status: 402 },
+      );
+    }
+  } else if (profile.trial_credits <= 0) {
     return NextResponse.json(
       { error: "No credits left", billingUrl: "/settings/billing" },
       { status: 402 },
@@ -207,10 +216,12 @@ export async function POST(request: Request) {
       recommended_actions: ((aiOutput as { recommendedActions?: unknown }).recommendedActions ?? []) as never,
     });
 
-    // Spend a trial credit only now that the analysis actually succeeded —
-    // a failed run should never cost the user anything. Active subscribers
-    // aren't metered against trial_credits at all.
-    if (!isSubscriptionActive) {
+    // Spend usage only now that the analysis actually succeeded — a failed
+    // run should never cost the user anything. Active subscribers are
+    // metered against the monthly cap instead of trial_credits.
+    if (isSubscriptionActive) {
+      await consumeMonthlyAnalysis(supabase, user.id, UPGRADE_PLAN.monthlyAnalysisLimit);
+    } else {
       await decrementTrialCredit(supabase, user.id);
     }
 

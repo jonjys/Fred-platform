@@ -272,6 +272,8 @@ export interface Database {
           trial_credits: number;
           stripe_customer_id: string | null;
           subscription_status: ProfileSubscriptionStatus;
+          monthly_analyses_used: number;
+          monthly_period_start: string;
           created_at: string;
         };
         Insert: {
@@ -280,6 +282,8 @@ export interface Database {
           trial_credits?: number;
           stripe_customer_id?: string | null;
           subscription_status?: ProfileSubscriptionStatus;
+          monthly_analyses_used?: number;
+          monthly_period_start?: string;
           created_at?: string;
         };
         Update: {
@@ -288,6 +292,8 @@ export interface Database {
           trial_credits?: number;
           stripe_customer_id?: string | null;
           subscription_status?: ProfileSubscriptionStatus;
+          monthly_analyses_used?: number;
+          monthly_period_start?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -305,6 +311,23 @@ export interface Database {
           trial_credits: number;
           stripe_customer_id: string | null;
           subscription_status: ProfileSubscriptionStatus;
+          monthly_analyses_used: number;
+          monthly_period_start: string;
+          created_at: string;
+        } | null;
+      };
+      consume_monthly_analysis: {
+        Args: { p_user_id: string; p_limit: number };
+        // Non-SETOF composite return: a single row, or null when the
+        // WHERE clause matched nothing (i.e. already at the monthly cap).
+        Returns: {
+          id: string;
+          user_id: string;
+          trial_credits: number;
+          stripe_customer_id: string | null;
+          subscription_status: ProfileSubscriptionStatus;
+          monthly_analyses_used: number;
+          monthly_period_start: string;
           created_at: string;
         } | null;
       };

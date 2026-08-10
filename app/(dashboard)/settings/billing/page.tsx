@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
 import { UpgradeButton } from "@/components/billing/UpgradeButton";
+import { UPGRADE_PLAN } from "@/lib/billing/plan";
+import { currentMonthlyUsage } from "@/lib/billing/usage";
 import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 
@@ -77,7 +79,7 @@ export default async function BillingPage({
           </div>
           <CardDescription>
             {isActive
-              ? "You're on the Pro plan — unlimited analyses."
+              ? `${currentMonthlyUsage(profile)} / ${UPGRADE_PLAN.monthlyAnalysisLimit} analyses used this month.`
               : `${profile.trial_credits} trial ${profile.trial_credits === 1 ? "analysis" : "analyses"} remaining.`}
           </CardDescription>
         </CardHeader>

@@ -4,6 +4,7 @@ import type { Database } from "../types";
 
 export type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 export type CompanyInsert = Database["public"]["Tables"]["companies"]["Insert"];
+export type CompanyUpdate = Database["public"]["Tables"]["companies"]["Update"];
 
 export async function getCompanyById(
   supabase: SupabaseClient<Database>,
@@ -32,6 +33,22 @@ export async function createCompany(
   company: CompanyInsert,
 ): Promise<CompanyRow> {
   const { data, error } = await supabase.from("companies").insert(company).select().single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Relies on the caller's RLS-scoped client and the `companies_update_own`
+ * policy — an update targeting a company the caller doesn't own matches zero
+ * rows rather than throwing, so callers should already have confirmed
+ * ownership (e.g. via `getCompanyById`) before calling this.
+ */
+export async function updateCompany(
+  supabase: SupabaseClient<Database>,
+  companyId: string,
+  update: CompanyUpdate,
+): Promise<CompanyRow> {
+  const { data, error } = await supabase.from("companies").update(update).eq("id", companyId).select().single();
   if (error) throw error;
   return data;
 }
