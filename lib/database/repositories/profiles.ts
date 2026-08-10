@@ -52,6 +52,25 @@ export async function decrementTrialCredit(
   return data;
 }
 
+/**
+ * Atomically spends one analysis against the monthly Pro cap via the
+ * `consume_monthly_analysis` SQL function — handles the calendar-month
+ * rollover and the increment-with-cap guard in one statement, never a
+ * plain read-then-write update. Returns `null` if the user is already at
+ * `limit` for the current month (the caller should already have gated on
+ * this before doing any billable work, so this is a defensive signal, not
+ * the primary check).
+ */
+export async function consumeMonthlyAnalysis(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  limit: number,
+): Promise<ProfileRow | null> {
+  const { data, error } = await supabase.rpc("consume_monthly_analysis", { p_user_id: userId, p_limit: limit });
+  if (error) throw error;
+  return data;
+}
+
 export async function getProfileByStripeCustomerId(
   supabase: SupabaseClient<Database>,
   stripeCustomerId: string,

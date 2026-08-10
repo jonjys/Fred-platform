@@ -373,6 +373,13 @@ create table profiles (
   subscription_status   text not null default 'trial'
     check (subscription_status in ('trial', 'active', 'canceled')),
 
+  -- Usage cap for active (Pro) subscribers only — trial users are gated on
+  -- trial_credits instead. `monthly_period_start` is the first-of-month the
+  -- counter currently applies to; `consume_monthly_analysis` rolls both
+  -- columns over automatically the first time it's called in a new month.
+  monthly_analyses_used  int not null default 0,
+  monthly_period_start   date not null default date_trunc('month', now())::date,
+
   created_at            timestamptz not null default now()
 );
 
@@ -435,3 +442,34 @@ end;
 $$;
 
 grant execute on function public.decrement_trial_credit(uuid) to authenticated;
+
+-- Atomic "spend one analysis against the monthly Pro cap." Single UPDATE so
+-- the month-rollover check and the increment-with-cap guard can't race:
+--   - Different calendar month than monthly_period_start -> always allowed;
+--     resets the counter to 1 and moves monthly_period_start forward.
+--   - Same month -> allowed only while monthly_analyses_used < p_limit.
+-- Returns the updated row, or no row if the caller is at the cap for the
+-- current month (caller should treat that as already-gated).
+create or replace function public.consume_monthly_analysis(p_user_id uuid, p_limit int)
+returns public.profiles
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  updated_row public.profiles;
+  current_period date := date_trunc('month', now())::date;
+begin
+  update public.profiles
+    set monthly_analyses_used = case
+          when monthly_period_start = current_period then monthly_analyses_used + 1
+          else 1
+        end,
+        monthly_period_start = current_period
+    where user_id = p_user_id
+      and (monthly_period_start <> current_period or monthly_analyses_used < p_limit)
+    returning * into updated_row;
+  return updated_row;
+end;
+$$;
+
+grant execute on function public.consume_monthly_analysis(uuid, int) to authenticated;
