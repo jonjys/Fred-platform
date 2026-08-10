@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseServiceRoleClient } from "../supabase/server";
 import type { Database } from "../types";
 
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -13,15 +14,19 @@ export async function getProfile(supabase: SupabaseClient<Database>, userId: str
  * Every signup gets a profile automatically via the `on_auth_user_created`
  * DB trigger — this is a defensive fallback, not the primary path. It
  * covers accounts created before that trigger existed, and any future edge
- * case where provisioning didn't happen for some other reason. Runs as the
- * signed-in user (not service-role), relying on the `profiles_insert_own`
- * RLS policy.
+ * case where provisioning didn't happen for some other reason.
+ *
+ * `profiles` has no insert/update RLS policy for the signed-in user (every
+ * column is billing-sensitive — see schema.sql), so the read stays on the
+ * caller's user-scoped client but the fallback insert must go through the
+ * service-role client instead.
  */
 export async function getOrCreateProfile(supabase: SupabaseClient<Database>, userId: string): Promise<ProfileRow> {
   const existing = await getProfile(supabase, userId);
   if (existing) return existing;
 
-  const { data, error } = await supabase
+  const serviceRole = createSupabaseServiceRoleClient();
+  const { data, error } = await serviceRole
     .from("profiles")
     .insert({ user_id: userId })
     .select()
