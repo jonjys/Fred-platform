@@ -4,19 +4,19 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStripeRedirect } from "./useStripeRedirect";
 
-export function UpgradeButton() {
-  const { isLoading, error, trigger } = useStripeRedirect("/api/stripe/checkout");
+export function ManageSubscriptionButton() {
+  const { isLoading, error, trigger } = useStripeRedirect("/api/stripe/portal");
 
   return (
     <div className="space-y-2">
-      <Button onClick={trigger} disabled={isLoading}>
+      <Button onClick={trigger} disabled={isLoading} variant="outline">
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Starting checkout…
+            Öppnar…
           </>
         ) : (
-          "Uppgradera – 499 kr/mån (50 analyser)"
+          "Hantera prenumeration"
         )}
       </Button>
       {error && <p className="text-sm text-destructive">{error}</p>}
