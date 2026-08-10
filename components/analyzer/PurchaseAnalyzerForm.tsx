@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Plus } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
 
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [billingUrl, setBillingUrl] = useState<string | null>(null);
   const [result, setResult] = useState<PurchaseDecisionResult | null>(null);
 
   // When a document is attached, offer fields are allowed to stay blank —
@@ -82,6 +84,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     setFile(null);
     setStatus("idle");
     setError(null);
+    setBillingUrl(null);
     setResult(null);
   }
 
@@ -89,6 +92,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     event.preventDefault();
     setStatus("submitting");
     setError(null);
+    setBillingUrl(null);
     setResult(null);
 
     // decisionTitle isn't something extraction produces (it's a label, not
@@ -129,7 +133,15 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         decision?: AnalyzeApiDecision;
         error?: string;
         issues?: Array<{ path: (string | number)[]; message: string }>;
+        billingUrl?: string;
       };
+
+      if (response.status === 402) {
+        setStatus("error");
+        setError(body.error ?? "No credits left");
+        setBillingUrl(body.billingUrl ?? "/settings/billing");
+        return;
+      }
 
       if (!response.ok || !body.decision || body.decision.status !== "completed") {
         setStatus("error");
@@ -296,7 +308,20 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         </CardContent>
       </Card>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="text-sm text-destructive">
+          {error}
+          {billingUrl && (
+            <>
+              {" "}
+              <Link href={billingUrl} className="underline underline-offset-4">
+                Upgrade your plan
+              </Link>
+              .
+            </>
+          )}
+        </p>
+      )}
 
       <Button type="submit" size="lg" disabled={status === "submitting" || !companyId} className="w-full">
         {status === "submitting" ? (

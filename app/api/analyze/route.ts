@@ -17,6 +17,7 @@ import { AiOutputValidationError, runModuleAiAnalysis } from "@/lib/ai/claude";
 import { toCompanyContext, getCompanyById } from "@/lib/database/repositories/companies";
 import { createDecision, updateDecision } from "@/lib/database/repositories/decisions";
 import { createDecisionDocument } from "@/lib/database/repositories/documents";
+import { decrementTrialCredit, getOrCreateProfile } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import { parseFile, parsePastedText, UnparsablePdfError, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
 import { deepMergePreferOverride } from "@/lib/decision-engine/merge";
@@ -48,6 +49,17 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // --- Usage gate — before any AI-consuming work, not just before the AI
+  // calls, so a gated request never pays for document parsing either. -------
+  const profile = await getOrCreateProfile(supabase, user.id);
+  const isSubscriptionActive = profile.subscription_status === "active";
+  if (!isSubscriptionActive && profile.trial_credits <= 0) {
+    return NextResponse.json(
+      { error: "No credits left", billingUrl: "/settings/billing" },
+      { status: 402 },
+    );
   }
 
   const formData = await request.formData();
@@ -194,6 +206,13 @@ export async function POST(request: Request) {
       risks: ((aiOutput as { risks?: unknown }).risks ?? []) as never,
       recommended_actions: ((aiOutput as { recommendedActions?: unknown }).recommendedActions ?? []) as never,
     });
+
+    // Spend a trial credit only now that the analysis actually succeeded —
+    // a failed run should never cost the user anything. Active subscribers
+    // aren't metered against trial_credits at all.
+    if (!isSubscriptionActive) {
+      await decrementTrialCredit(supabase, user.id);
+    }
 
     return NextResponse.json({ decision }, { status: 201 });
   } catch (error) {
