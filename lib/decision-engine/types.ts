@@ -118,6 +118,24 @@ export interface RecommendedAction {
 }
 
 // -----------------------------------------------------------------------------
+// Reusable real-world entities (vendors, suppliers, products...) a decision
+// involves — mirrors the `decision_entity_type` Postgres enum
+// (lib/database/schema.sql). Duplicated here rather than imported from
+// lib/database/types so the decision engine stays independent of the
+// database layer; the two are kept in sync by hand, same as the other
+// domain vocabulary in this file (VerdictSeverity, RiskSeverity, ...).
+// -----------------------------------------------------------------------------
+
+export type DecisionEntityType = "vendor" | "supplier" | "product" | "service" | "contract_party" | "other";
+
+export interface EntityCandidate {
+  name: string;
+  entityType: DecisionEntityType;
+  /** e.g. "primary_option" | "alternative" | "incumbent" — free-text, mirrors decision_entity_links.role. */
+  role: string;
+}
+
+// -----------------------------------------------------------------------------
 // Company context passed into every module
 // -----------------------------------------------------------------------------
 
@@ -192,6 +210,17 @@ export interface DecisionModule<TInput = unknown, TMetrics = unknown, TAiOutput 
    * structured form input (no documents) can omit this.
    */
   extractInput?: (text: string, context: CompanyContext) => Promise<DeepPartial<TInput>>;
+
+  /**
+   * Optional: identifies which reusable real-world entities (vendors,
+   * suppliers, products...) this decision involves, so the platform can
+   * link them via decision_entities/decision_entity_links — the basis for
+   * "you've evaluated this vendor before" history surfaced on future
+   * analyses. Pure and synchronous, same as `calculateMetrics`: it reads
+   * names out of already-validated input, it doesn't look anything up.
+   * Modules that don't deal in named external parties can omit this.
+   */
+  extractEntities?: (input: TInput) => EntityCandidate[];
 }
 
 /** Type-erased form used by the registry so heterogeneous modules can be

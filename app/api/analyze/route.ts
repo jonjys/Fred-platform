@@ -19,6 +19,7 @@ import { currentMonthlyUsage } from "@/lib/billing/usage";
 import { toCompanyContext, getCompanyById } from "@/lib/database/repositories/companies";
 import { createDecision, updateDecision } from "@/lib/database/repositories/decisions";
 import { createDecisionDocument } from "@/lib/database/repositories/documents";
+import { createEntityLink, findOrCreateEntity } from "@/lib/database/repositories/entities";
 import { consumeMonthlyAnalysis, decrementTrialCredit, getOrCreateProfile } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import { parseFile, parsePastedText, UnparsablePdfError, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
@@ -223,6 +224,26 @@ export async function POST(request: Request) {
       await consumeMonthlyAnalysis(supabase, user.id, UPGRADE_PLAN.monthlyAnalysisLimit);
     } else {
       await decrementTrialCredit(supabase, user.id);
+    }
+
+    // --- Link the decision to the real-world entities it involved (Decision
+    // Graph: decision_entities/decision_entity_links) so future analyses can
+    // surface "you've evaluated this vendor before." Best-effort: a failure
+    // here shouldn't fail an otherwise-successful, already-billed analysis.
+    if (decisionModule.extractEntities) {
+      try {
+        const candidates = decisionModule.extractEntities(validatedInput);
+        for (const candidate of candidates) {
+          const entity = await findOrCreateEntity(supabase, {
+            companyId,
+            entityType: candidate.entityType,
+            name: candidate.name,
+          });
+          await createEntityLink(supabase, { decisionId: decision.id, entityId: entity.id, role: candidate.role });
+        }
+      } catch (error) {
+        console.error("[analyze] Failed to link decision entities.", error);
+      }
     }
 
     return NextResponse.json({ decision }, { status: 201 });

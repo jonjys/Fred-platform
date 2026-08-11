@@ -1,5 +1,6 @@
 import type { DecisionModule } from "../../types";
 import { calculatePurchaseMetrics } from "./engine";
+import { extractPurchaseEntities } from "./entities";
 import { extractPurchaseInputFromText } from "./extract";
 import { buildPurchaseAnalysisPrompt } from "./prompt";
 import { purchaseAnalysisAiOutputSchema, purchaseAnalysisInputSchema } from "./schemas";
@@ -23,6 +24,7 @@ export const purchaseAnalysisModule: DecisionModule<
   buildPrompt: buildPurchaseAnalysisPrompt,
   resolveVerdict: resolvePurchaseVerdict,
   extractInput: extractPurchaseInputFromText,
+  extractEntities: extractPurchaseEntities,
 };
 
 export * from "./types";
