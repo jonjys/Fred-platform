@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "./FileDropzone";
 import { emptyOfferDraft, OfferFieldset, type OfferDraft } from "./OfferFieldset";
+import { SupplierHistoryPanel } from "./SupplierHistoryPanel";
 import {
   ResultsView,
   toPurchaseDecisionResult,
@@ -225,6 +226,8 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         onChange={setPrimaryOffer}
         required={!hasDocumentSource}
       />
+
+      {companyId && <SupplierHistoryPanel companyId={companyId} vendorName={primaryOffer.vendorName} />}
 
       {alternativeOffers.map((offer, index) => (
         <OfferFieldset
