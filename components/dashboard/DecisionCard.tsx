@@ -1,3 +1,4 @@
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,12 +64,18 @@ export function DecisionCard({ decision }: { decision: DecisionRow }) {
             </div>
           )}
 
-          <div className="text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             {new Date(decision.created_at).toLocaleDateString(undefined, {
               year: "numeric",
               month: "short",
               day: "numeric",
             })}
+            {decision.final_decision && (
+              <span className="flex items-center gap-1 text-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Outcome logged
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>

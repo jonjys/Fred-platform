@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
+import { DecisionOutcomeForm } from "@/components/history/DecisionOutcomeForm";
 import { ResultsView, toPurchaseDecisionResult } from "@/components/results/ResultsView";
 import { getDecisionById, type DecisionRow } from "@/lib/database/repositories/decisions";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
@@ -73,6 +74,18 @@ function DecisionBody({ decision }: { decision: DecisionRow }) {
     );
   }
 
+  return (
+    <div className="space-y-6">
+      <DecisionResult decision={decision} />
+      {/* final_decision/outcome are module-agnostic (see schema.sql), so this
+       * form is available for any completed decision, not just
+       * purchase-analysis. */}
+      <DecisionOutcomeForm decision={decision} />
+    </div>
+  );
+}
+
+function DecisionResult({ decision }: { decision: DecisionRow }) {
   if (decision.module_key === "purchase-analysis") {
     const result = toPurchaseDecisionResult(decision);
     if (!result) {
