@@ -273,30 +273,30 @@ alter table company_module_access enable row level security;
 
 -- companies: a user may only see/manage their own companies.
 create policy "companies_select_own" on companies
-  for select using (user_id = auth.uid());
+  for select using (user_id = (select auth.uid()));
 create policy "companies_insert_own" on companies
-  for insert with check (user_id = auth.uid());
+  for insert with check (user_id = (select auth.uid()));
 create policy "companies_update_own" on companies
-  for update using (user_id = auth.uid());
+  for update using (user_id = (select auth.uid()));
 create policy "companies_delete_own" on companies
-  for delete using (user_id = auth.uid());
+  for delete using (user_id = (select auth.uid()));
 
 -- decisions: scoped via owning company.
 create policy "decisions_select_own" on decisions
   for select using (
-    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = (select auth.uid()))
   );
 create policy "decisions_insert_own" on decisions
   for insert with check (
-    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = (select auth.uid()))
   );
 create policy "decisions_update_own" on decisions
   for update using (
-    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = (select auth.uid()))
   );
 create policy "decisions_delete_own" on decisions
   for delete using (
-    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = decisions.company_id and c.user_id = (select auth.uid()))
   );
 
 -- decision_documents: scoped via owning decision -> company.
@@ -305,7 +305,7 @@ create policy "decision_documents_select_own" on decision_documents
     exists (
       select 1 from decisions d
       join companies c on c.id = d.company_id
-      where d.id = decision_documents.decision_id and c.user_id = auth.uid()
+      where d.id = decision_documents.decision_id and c.user_id = (select auth.uid())
     )
   );
 create policy "decision_documents_insert_own" on decision_documents
@@ -313,7 +313,7 @@ create policy "decision_documents_insert_own" on decision_documents
     exists (
       select 1 from decisions d
       join companies c on c.id = d.company_id
-      where d.id = decision_documents.decision_id and c.user_id = auth.uid()
+      where d.id = decision_documents.decision_id and c.user_id = (select auth.uid())
     )
   );
 
@@ -321,16 +321,16 @@ create policy "decision_documents_insert_own" on decision_documents
 create policy "decision_entities_select_own_or_global" on decision_entities
   for select using (
     company_id is null
-    or exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = auth.uid())
+    or exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = (select auth.uid()))
   );
 create policy "decision_entities_insert_own" on decision_entities
   for insert with check (
     company_id is null
-    or exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = auth.uid())
+    or exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = (select auth.uid()))
   );
 create policy "decision_entities_update_own" on decision_entities
   for update using (
-    exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = decision_entities.company_id and c.user_id = (select auth.uid()))
   );
 
 -- decision_entity_links: scoped via owning decision -> company.
@@ -339,7 +339,7 @@ create policy "decision_entity_links_select_own" on decision_entity_links
     exists (
       select 1 from decisions d
       join companies c on c.id = d.company_id
-      where d.id = decision_entity_links.decision_id and c.user_id = auth.uid()
+      where d.id = decision_entity_links.decision_id and c.user_id = (select auth.uid())
     )
   );
 create policy "decision_entity_links_insert_own" on decision_entity_links
@@ -347,14 +347,14 @@ create policy "decision_entity_links_insert_own" on decision_entity_links
     exists (
       select 1 from decisions d
       join companies c on c.id = d.company_id
-      where d.id = decision_entity_links.decision_id and c.user_id = auth.uid()
+      where d.id = decision_entity_links.decision_id and c.user_id = (select auth.uid())
     )
   );
 
 -- company_module_access: scoped via owning company.
 create policy "company_module_access_select_own" on company_module_access
   for select using (
-    exists (select 1 from companies c where c.id = company_module_access.company_id and c.user_id = auth.uid())
+    exists (select 1 from companies c where c.id = company_module_access.company_id and c.user_id = (select auth.uid()))
   );
 
 -- =============================================================================
@@ -388,7 +388,7 @@ create index profiles_stripe_customer_id_idx on profiles(stripe_customer_id);
 alter table profiles enable row level security;
 
 create policy "profiles_select_own" on profiles
-  for select using (user_id = auth.uid());
+  for select using (user_id = (select auth.uid()));
 -- Deliberately NO insert/update policy for the signed-in user. Every column
 -- on this row (trial_credits, subscription_status, stripe_customer_id) is
 -- billing-sensitive: an update-own policy that only checks `user_id =
@@ -420,6 +420,12 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Trigger-only — never meant to be callable directly via the client-facing
+-- REST API. Supabase grants EXECUTE to anon/authenticated by default on
+-- function creation (both a direct grant and a separate PUBLIC-level
+-- default), so both must be revoked explicitly to actually lock it down.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 -- Atomic "spend one trial credit" — a plain client-side
 -- update({trial_credits: n - 1}) would race under concurrent requests from
 -- the same user; this does the decrement and the "don't go below zero"
@@ -441,6 +447,10 @@ begin
 end;
 $$;
 
+-- Supabase grants EXECUTE to anon (both directly and via a PUBLIC-level
+-- default) on function creation — revoke both before granting only to
+-- authenticated, the sole role that should ever call this.
+revoke execute on function public.decrement_trial_credit(uuid) from public, anon;
 grant execute on function public.decrement_trial_credit(uuid) to authenticated;
 
 -- Atomic "spend one analysis against the monthly Pro cap." Single UPDATE so
@@ -472,6 +482,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.consume_monthly_analysis(uuid, int) from public, anon;
 grant execute on function public.consume_monthly_analysis(uuid, int) to authenticated;
 
 -- =============================================================================
@@ -527,3 +538,8 @@ begin
   return current_count <= p_max;
 end;
 $$;
+
+-- Service-role-only — never meant to be callable directly via the
+-- client-facing REST API. Same two-part revoke as handle_new_user (direct
+-- grant + PUBLIC-level default, both applied by Supabase on creation).
+revoke execute on function public.check_rate_limit(text, int, int) from public, anon, authenticated;
