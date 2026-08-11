@@ -473,3 +473,57 @@ end;
 $$;
 
 grant execute on function public.consume_monthly_analysis(uuid, int) to authenticated;
+
+-- =============================================================================
+-- rate_limit_buckets  (generic fixed-window request counter — no new infra)
+-- =============================================================================
+-- Deliberately not scoped to any one route or resource: `key` is caller-
+-- defined (e.g. "analyze:" || user_id), so the same table/function backs
+-- rate limiting for any future endpoint. No RLS policies are defined here on
+-- purpose — this table has nothing for a client to legitimately read or
+-- write directly, so leaving it policy-less (RLS enabled, zero grants)
+-- locks it to the service-role client / SECURITY DEFINER functions only,
+-- same trust boundary as `profiles`.
+create table rate_limit_buckets (
+  key           text primary key,
+  window_start  timestamptz not null default now(),
+  count         int not null default 0
+);
+
+alter table rate_limit_buckets enable row level security;
+
+-- Atomic "record one request and say whether it's within the limit."
+-- Single UPSERT so the window-rollover check and the increment can't race:
+--   - No existing bucket, or the existing bucket's window has expired ->
+--     starts a fresh window at count 1 (always allowed).
+--   - Window still active -> increments; allowed while the new count is
+--     still <= p_max.
+-- Returns true (allowed) or false (rate-limited) — never throws, so a
+-- caller can fail open on unexpected errors instead of blocking requests
+-- if this table has an outage independent of the rest of the app.
+create or replace function public.check_rate_limit(p_key text, p_window_seconds int, p_max int)
+returns boolean
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  current_count int;
+begin
+  insert into public.rate_limit_buckets (key, window_start, count)
+  values (p_key, now(), 1)
+  on conflict (key) do update
+    set count = case
+          when rate_limit_buckets.window_start <= now() - (p_window_seconds || ' seconds')::interval
+            then 1
+          else rate_limit_buckets.count + 1
+        end,
+        window_start = case
+          when rate_limit_buckets.window_start <= now() - (p_window_seconds || ' seconds')::interval
+            then now()
+          else rate_limit_buckets.window_start
+        end
+  returning count into current_count;
+
+  return current_count <= p_max;
+end;
+$$;

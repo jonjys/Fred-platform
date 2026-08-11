@@ -22,6 +22,7 @@ import { createDecisionDocument } from "@/lib/database/repositories/documents";
 import { createEntityLink, findOrCreateEntity } from "@/lib/database/repositories/entities";
 import { consumeMonthlyAnalysis, decrementTrialCredit, getOrCreateProfile } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { parseFile, parsePastedText, UnparsablePdfError, UnsupportedDocumentTypeError } from "@/lib/documents/parser";
 import { deepMergePreferOverride } from "@/lib/decision-engine/merge";
 
@@ -52,6 +53,15 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // --- Rate limit — caps request *rate*, independent of the usage gate
+  // below which only caps total count. Without this, a user with credits/
+  // quota left could still burst dozens of requests per second, each
+  // spending up to 60s of compute and multiple Anthropic calls. -------------
+  const withinRateLimit = await checkRateLimit(`analyze:${user.id}`, 60, 10);
+  if (!withinRateLimit) {
+    return NextResponse.json({ error: "Too many requests — please wait a moment and try again." }, { status: 429 });
   }
 
   // --- Usage gate — before any AI-consuming work, not just before the AI
