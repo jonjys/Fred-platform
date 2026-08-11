@@ -298,9 +298,31 @@ export interface Database {
         };
         Relationships: [];
       };
+      rate_limit_buckets: {
+        Row: {
+          key: string;
+          window_start: string;
+          count: number;
+        };
+        Insert: {
+          key: string;
+          window_start?: string;
+          count?: number;
+        };
+        Update: {
+          key?: string;
+          window_start?: string;
+          count?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      check_rate_limit: {
+        Args: { p_key: string; p_window_seconds: number; p_max: number };
+        Returns: boolean;
+      };
       decrement_trial_credit: {
         Args: { p_user_id: string };
         // Non-SETOF composite return: a single row, or null when the
