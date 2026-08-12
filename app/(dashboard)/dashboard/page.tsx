@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { DecisionCard } from "@/components/dashboard/DecisionCard";
 import { DecisionCardGrid } from "@/components/dashboard/DecisionCardGrid";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
 import { SavingsCard } from "@/components/dashboard/SavingsCard";
 import { listDecisionsForUser, type DecisionRow } from "@/lib/database/repositories/decisions";
 import { computeDashboardStats } from "@/lib/dashboard/stats";
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dashboard</h1>
         <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
       </div>
 
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       {error ? (
         <ConfigErrorNotice title="Couldn't load recent decisions" />
       ) : decisions.length === 0 ? (
-        <EmptyState />
+        <EmptyDashboard />
       ) : (
         <DecisionCardGrid>
           {recentDecisions.map((decision) => (

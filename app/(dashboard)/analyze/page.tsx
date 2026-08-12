@@ -41,7 +41,7 @@ export default async function AnalyzePage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Analyze</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Analyze</h1>
           <p className="text-muted-foreground">One more step before your first analysis.</p>
         </div>
         <CreateCompanyForm />
@@ -52,7 +52,7 @@ export default async function AnalyzePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Analyze</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Analyze</h1>
         <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
       </div>
       <Suspense fallback={<div className="max-w-2xl animate-pulse text-sm text-muted-foreground">Loading…</div>}>

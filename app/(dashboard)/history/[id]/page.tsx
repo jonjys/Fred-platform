@@ -40,7 +40,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
     <div className="max-w-3xl space-y-8">
       <BackLink />
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{decision.title}</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{decision.title}</h1>
         <p className="text-sm text-muted-foreground">
           {new Date(decision.created_at).toLocaleString(undefined, {
             dateStyle: "medium",
