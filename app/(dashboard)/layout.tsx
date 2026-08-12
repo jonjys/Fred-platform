@@ -56,10 +56,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
-        <div className="flex items-center gap-8">
+      <header className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
           <span className="font-semibold">AI Business Decision OS</span>
-          <nav className="flex gap-4 text-sm text-muted-foreground">
+          <nav className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-foreground">
                 {link.label}
@@ -68,7 +68,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>{user.email}</span>
+          <span className="truncate">{user.email}</span>
           <SignOutButton />
         </div>
       </header>

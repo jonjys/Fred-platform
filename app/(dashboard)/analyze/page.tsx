@@ -1,7 +1,7 @@
 import { unstable_rethrow } from "next/navigation";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
+import { AnalyzeModulePicker } from "@/components/analyzer/AnalyzeModulePicker";
 import { CreateCompanyForm } from "@/components/analyzer/CreateCompanyForm";
-import { PurchaseAnalyzerForm } from "@/components/analyzer/PurchaseAnalyzerForm";
 import { listCompaniesForUser, type CompanyRow } from "@/lib/database/repositories/companies";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 
@@ -54,7 +54,7 @@ export default async function AnalyzePage() {
         <h1 className="text-2xl font-semibold">Analyze</h1>
         <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
       </div>
-      <PurchaseAnalyzerForm
+      <AnalyzeModulePicker
         companies={companies.map((company) => ({ id: company.id, companyName: company.company_name }))}
       />
     </div>

@@ -91,9 +91,24 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setStatus("submitting");
     setError(null);
     setBillingUrl(null);
+
+    // Without a document, the offer fields are the only source of cost data
+    // — an all-zero primary offer produces a technically-valid but
+    // meaningless analysis (TCO of nothing). A document attachment is
+    // exempt since extraction may fill real costs in server-side.
+    if (!hasDocumentSource) {
+      const upfront = Number(primaryOffer.upfrontCost || 0);
+      const monthly = Number(primaryOffer.monthlyCost || 0);
+      if (upfront === 0 && monthly === 0) {
+        setStatus("error");
+        setError("Enter an upfront or monthly cost for the primary offer, or attach a document/quote instead.");
+        return;
+      }
+    }
+
+    setStatus("submitting");
     setResult(null);
 
     // decisionTitle isn't something extraction produces (it's a label, not
