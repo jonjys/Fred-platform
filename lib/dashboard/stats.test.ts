@@ -88,4 +88,27 @@ describe("computeDashboardStats", () => {
     const stats = computeDashboardStats(decisions, NOW);
     expect(stats.avgRoiPercentage).toBeNull();
   });
+
+  describe("totalSaved", () => {
+    it("excludes negative-net-benefit decisions rather than netting them against positive ones", () => {
+      const decisions = [
+        decision({ deterministic_metrics: withRoi(20, 1000) as never }),
+        decision({ deterministic_metrics: withRoi(-10, -500) as never }),
+      ];
+      const stats = computeDashboardStats(decisions, NOW);
+
+      // totalNetBenefit is the true (possibly negative) figure...
+      expect(stats.totalNetBenefit).toBe(500);
+      // ...totalSaved only ever counts the positive contributions.
+      expect(stats.totalSaved).toBe(1000);
+    });
+
+    it("is null when every decision has a negative or zero net benefit", () => {
+      const decisions = [decision({ deterministic_metrics: withRoi(-10, -500) as never })];
+      const stats = computeDashboardStats(decisions, NOW);
+
+      expect(stats.totalNetBenefit).toBe(-500);
+      expect(stats.totalSaved).toBeNull();
+    });
+  });
 });

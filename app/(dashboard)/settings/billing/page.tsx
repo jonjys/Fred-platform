@@ -52,7 +52,7 @@ export default async function BillingPage({
   return (
     <div className="max-w-lg space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Billing</h1>
         <p className="text-muted-foreground">Manage your plan and usage.</p>
       </div>
 

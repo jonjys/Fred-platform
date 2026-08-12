@@ -33,7 +33,7 @@ export default async function HistoryPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">History</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">History</h1>
         <p className="text-muted-foreground">Every decision you&apos;ve run — the Decision Graph.</p>
       </div>
 
