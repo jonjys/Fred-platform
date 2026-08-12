@@ -3,6 +3,8 @@ import { unstable_rethrow } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { DecisionCard } from "@/components/dashboard/DecisionCard";
+import { DecisionCardGrid } from "@/components/dashboard/DecisionCardGrid";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { SavingsCard } from "@/components/dashboard/SavingsCard";
 import { listDecisionsForUser, type DecisionRow } from "@/lib/database/repositories/decisions";
 import { computeDashboardStats } from "@/lib/dashboard/stats";
@@ -31,39 +33,38 @@ export default async function DashboardPage() {
   const recentDecisions = decisions.slice(0, RECENT_LIMIT);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
       </div>
 
       {!error && decisions.length > 0 && <SavingsCard stats={computeDashboardStats(decisions)} />}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent decisions</h2>
-        <div className="flex gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href="/history">View all</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/analyze">New analysis</Link>
-          </Button>
+      {!error && decisions.length > 0 && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent decisions</h2>
+          <div className="flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href="/history">View all</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/analyze">New analysis</Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {error ? (
         <ConfigErrorNotice title="Couldn't load recent decisions" />
       ) : decisions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No decisions yet. Head to <span className="font-medium text-foreground">Analyze</span> to run your first
-          one.
-        </p>
+        <EmptyState />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <DecisionCardGrid>
           {recentDecisions.map((decision) => (
             <DecisionCard key={decision.id} decision={decision} />
           ))}
-        </div>
+        </DecisionCardGrid>
       )}
     </div>
   );

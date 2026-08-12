@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldHint } from "./FieldHint";
 import { FileDropzone } from "./FileDropzone";
 import { emptyOfferDraft, OfferFieldset, type OfferDraft } from "./OfferFieldset";
 import { SupplierHistoryPanel } from "./SupplierHistoryPanel";
@@ -19,6 +20,7 @@ import {
   type PurchaseDecisionResult,
   type PurchaseDecisionResultSource,
 } from "@/components/results/ResultsView";
+import type { AnalyzeTemplate } from "@/config/analyze-templates";
 
 interface CompanyOption {
   id: string;
@@ -51,13 +53,26 @@ function offerDraftToPayload(draft: OfferDraft) {
   };
 }
 
-export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[] }) {
+export function PurchaseAnalyzerForm({
+  companies,
+  initial,
+}: {
+  companies: CompanyOption[];
+  /** Prefill from a dashboard empty-state template (config/analyze-templates.ts) — optional, purely a UX head start, never required. */
+  initial?: AnalyzeTemplate;
+}) {
   const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
-  const [decisionTitle, setDecisionTitle] = useState("");
+  const [decisionTitle, setDecisionTitle] = useState(initial?.decisionTitle ?? "");
   const [primaryOffer, setPrimaryOffer] = useState<OfferDraft>(emptyOfferDraft());
-  const [alternativeOffers, setAlternativeOffers] = useState<OfferDraft[]>([]);
+  const [alternativeOffers, setAlternativeOffers] = useState<OfferDraft[]>(
+    initial?.addAlternativeOffer ? [emptyOfferDraft()] : [],
+  );
   const [vatRateOverride, setVatRateOverride] = useState("");
   const [expectedMonthlyBenefit, setExpectedMonthlyBenefit] = useState("");
+  // Deliberately NOT prefilled from initial?.notes into documentText: doing
+  // so would flip hasDocumentSource to true and skip the cost-required
+  // validation below for a template that only wants to show guidance text,
+  // not real document content for extraction.
   const [documentText, setDocumentText] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
@@ -199,10 +214,15 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>New purchase decision</CardTitle>
+          <CardTitle>Decision</CardTitle>
           <CardDescription>BUY, NEGOTIATE, or REJECT — backed by real TCO, not a gut feeling.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {initial?.notes && (
+            <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+              {initial.notes}
+            </p>
+          )}
           {companies.length > 1 && (
             <div className="space-y-2">
               <Label>Company</Label>
@@ -234,39 +254,45 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         </CardContent>
       </Card>
 
-      <OfferFieldset
-        idPrefix="primary"
-        title="Primary offer"
-        value={primaryOffer}
-        onChange={setPrimaryOffer}
-        required={!hasDocumentSource}
-      />
-
-      {companyId && <SupplierHistoryPanel companyId={companyId} vendorName={primaryOffer.vendorName} />}
-
-      {alternativeOffers.map((offer, index) => (
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Costs</h2>
         <OfferFieldset
-          key={index}
-          idPrefix={`alt-${index}`}
-          title={`Alternative offer ${index + 1}`}
-          value={offer}
-          onChange={(next) =>
-            setAlternativeOffers((offers) => offers.map((o, i) => (i === index ? next : o)))
-          }
-          onRemove={() => setAlternativeOffers((offers) => offers.filter((_, i) => i !== index))}
+          idPrefix="primary"
+          title="Primary offer"
+          value={primaryOffer}
+          onChange={setPrimaryOffer}
           required={!hasDocumentSource}
         />
-      ))}
+        {companyId && <SupplierHistoryPanel companyId={companyId} vendorName={primaryOffer.vendorName} />}
+      </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setAlternativeOffers((offers) => [...offers, emptyOfferDraft()])}
-      >
-        <Plus className="mr-1 h-3.5 w-3.5" />
-        Add supplier alternative
-      </Button>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Alternatives</h2>
+
+        {alternativeOffers.map((offer, index) => (
+          <OfferFieldset
+            key={index}
+            idPrefix={`alt-${index}`}
+            title={`Alternative offer ${index + 1}`}
+            value={offer}
+            onChange={(next) =>
+              setAlternativeOffers((offers) => offers.map((o, i) => (i === index ? next : o)))
+            }
+            onRemove={() => setAlternativeOffers((offers) => offers.filter((_, i) => i !== index))}
+            required={!hasDocumentSource}
+          />
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setAlternativeOffers((offers) => [...offers, emptyOfferDraft()])}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          Add supplier alternative
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>
@@ -276,7 +302,10 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="vatRateOverride">VAT rate override (%)</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="vatRateOverride">VAT rate override (%)</Label>
+                <FieldHint text="Overrides your company's default VAT rate for this decision only — leave blank to use the company setting." />
+              </div>
               <Input
                 id="vatRateOverride"
                 type="number"
@@ -289,7 +318,10 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expectedMonthlyBenefit">Expected monthly benefit</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="expectedMonthlyBenefit">Expected monthly benefit</Label>
+                <FieldHint text="Monthly savings or revenue this purchase is expected to generate — enables the ROI and payback-period calculation." />
+              </div>
               <Input
                 id="expectedMonthlyBenefit"
                 type="number"
@@ -345,7 +377,7 @@ export function PurchaseAnalyzerForm({ companies }: { companies: CompanyOption[]
         {status === "submitting" ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Running analysis…
+            Analyzing with Claude…
           </>
         ) : (
           "Analyze decision"

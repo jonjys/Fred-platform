@@ -1,8 +1,10 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ANALYZE_TEMPLATES } from "@/config/analyze-templates";
 import { MODULE_CATALOG } from "@/config/module-catalog";
 import { ComingSoonModulePanel } from "./ComingSoonModulePanel";
 import { DebtOptimizerForm } from "./DebtOptimizerForm";
@@ -23,6 +25,11 @@ interface CompanyOption {
 export function AnalyzeModulePicker({ companies }: { companies: CompanyOption[] }) {
   const [moduleKey, setModuleKey] = useState(MODULE_CATALOG[0]?.key ?? "purchase-analysis");
   const selected = MODULE_CATALOG.find((entry) => entry.key === moduleKey) ?? MODULE_CATALOG[0];
+
+  // Set once from the dashboard's empty-state CTAs (?template=...) — read at
+  // mount time only, so it doesn't fight the user's own edits afterward.
+  const searchParams = useSearchParams();
+  const template = ANALYZE_TEMPLATES[searchParams.get("template") ?? ""];
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -45,7 +52,7 @@ export function AnalyzeModulePicker({ companies }: { companies: CompanyOption[] 
         </div>
       )}
 
-      {selected?.key === "purchase-analysis" && <PurchaseAnalyzerForm companies={companies} />}
+      {selected?.key === "purchase-analysis" && <PurchaseAnalyzerForm companies={companies} initial={template} />}
       {selected?.key === "debt-optimization" && <DebtOptimizerForm />}
       {selected && selected.key !== "purchase-analysis" && selected.key !== "debt-optimization" && (
         <ComingSoonModulePanel label={selected.label} description={selected.description} />
