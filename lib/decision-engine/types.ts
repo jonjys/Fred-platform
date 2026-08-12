@@ -12,6 +12,7 @@
  * only ever originate from `calculateMetrics`.
  */
 import type { ZodType, ZodTypeDef } from "zod";
+import type { DecisionEngine } from "./engine-interface";
 
 /** A Zod schema constrained only on its parsed `Output` — its raw `Input`
  * (pre-`.default()`/`.transform()`) is deliberately left unconstrained,
@@ -185,7 +186,17 @@ export interface DecisionModule<TInput = unknown, TMetrics = unknown, TAiOutput 
   /** Validates Claude's structured JSON response before it is trusted. */
   aiOutputSchema: SchemaFor<TAiOutput>;
 
-  /** Layer 1 — pure, deterministic, no AI, no I/O. */
+  /**
+   * The portable calculation core (see engine-interface.ts) — the same
+   * contract a fully standalone, externally-developed engine package would
+   * implement. `calculateMetrics` below is a thin adapter around this that
+   * the rest of the platform (the API pipeline, tests) actually calls; the
+   * separation exists so an engine can be built/verified/versioned with no
+   * dependency on this platform at all.
+   */
+  engine: DecisionEngine<TInput, TMetrics>;
+
+  /** Layer 1 — pure, deterministic, no AI, no I/O. Delegates to `engine.calculate`. */
   calculateMetrics: (input: TInput, context: CompanyContext) => TMetrics;
 
   /** Builds the module's Claude prompt from already-computed metrics, so the

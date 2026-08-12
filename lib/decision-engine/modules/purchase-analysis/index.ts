@@ -1,5 +1,5 @@
 import type { DecisionModule } from "../../types";
-import { calculatePurchaseMetrics } from "./engine";
+import { purchaseAnalysisEngine } from "./engine";
 import { extractPurchaseEntities } from "./entities";
 import { extractPurchaseInputFromText } from "./extract";
 import { buildPurchaseAnalysisPrompt } from "./prompt";
@@ -20,7 +20,8 @@ export const purchaseAnalysisModule: DecisionModule<
     "Analyzes a purchase decision — real 1yr/3yr cost, hidden fees, contract risk, and supplier alternatives — and recommends BUY, NEGOTIATE, or REJECT.",
   inputSchema: purchaseAnalysisInputSchema,
   aiOutputSchema: purchaseAnalysisAiOutputSchema,
-  calculateMetrics: calculatePurchaseMetrics,
+  engine: purchaseAnalysisEngine,
+  calculateMetrics: (input, context) => purchaseAnalysisEngine.calculate(input, context).result,
   buildPrompt: buildPurchaseAnalysisPrompt,
   resolveVerdict: resolvePurchaseVerdict,
   extractInput: extractPurchaseInputFromText,
