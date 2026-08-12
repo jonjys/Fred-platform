@@ -39,9 +39,9 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="max-w-lg space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
           Your AI Wallet — the company context every analysis uses for budget fit, VAT, and margin checks.
         </p>

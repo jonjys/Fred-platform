@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+import { Suspense } from "react";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { AnalyzeModulePicker } from "@/components/analyzer/AnalyzeModulePicker";
 import { CreateCompanyForm } from "@/components/analyzer/CreateCompanyForm";
@@ -38,9 +39,9 @@ export default async function AnalyzePage() {
 
   if (companies.length === 0) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold">Analyze</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Analyze</h1>
           <p className="text-muted-foreground">One more step before your first analysis.</p>
         </div>
         <CreateCompanyForm />
@@ -49,14 +50,16 @@ export default async function AnalyzePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Analyze</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Analyze</h1>
         <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
       </div>
-      <AnalyzeModulePicker
-        companies={companies.map((company) => ({ id: company.id, companyName: company.company_name }))}
-      />
+      <Suspense fallback={<div className="max-w-2xl animate-pulse text-sm text-muted-foreground">Loading…</div>}>
+        <AnalyzeModulePicker
+          companies={companies.map((company) => ({ id: company.id, companyName: company.company_name }))}
+        />
+      </Suspense>
     </div>
   );
 }

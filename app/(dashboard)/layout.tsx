@@ -2,15 +2,15 @@ import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
-import { SignOutButton } from "@/components/dashboard/SignOutButton";
+import { UserMenu } from "@/components/dashboard/UserMenu";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import type { User } from "@supabase/supabase-js";
 
+// Settings lives in the avatar dropdown (UserMenu) now, not the top nav.
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/analyze", label: "Analyze" },
   { href: "/history", label: "History" },
-  { href: "/settings", label: "Settings" },
 ];
 
 async function getUserSafely(): Promise<{ user: User | null; configError: string | null }> {
@@ -56,9 +56,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-          <span className="font-semibold">AI Business Decision OS</span>
+          <span className="font-semibold tracking-tight">AI Business Decision OS</span>
           <nav className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-foreground">
@@ -67,10 +67,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="truncate">{user.email}</span>
-          <SignOutButton />
-        </div>
+        <UserMenu email={user.email ?? ""} />
       </header>
       <main className="flex-1 p-6">{children}</main>
     </div>

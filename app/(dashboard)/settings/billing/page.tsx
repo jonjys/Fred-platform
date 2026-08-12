@@ -50,9 +50,9 @@ export default async function BillingPage({
   const isActive = profile.subscription_status === "active";
 
   return (
-    <div className="max-w-lg space-y-4">
+    <div className="max-w-lg space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Billing</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
         <p className="text-muted-foreground">Manage your plan and usage.</p>
       </div>
 

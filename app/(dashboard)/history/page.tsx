@@ -31,9 +31,9 @@ export default async function HistoryPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">History</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">History</h1>
         <p className="text-muted-foreground">Every decision you&apos;ve run — the Decision Graph.</p>
       </div>
 
