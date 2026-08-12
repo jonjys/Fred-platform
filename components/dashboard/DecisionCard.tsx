@@ -7,6 +7,7 @@ import type { PurchaseAnalysisMetrics } from "@/lib/decision-engine/modules/purc
 import type { PurchaseAnalysisInputParsed } from "@/lib/decision-engine/modules/purchase-analysis/schemas";
 import type { Verdict } from "@/lib/decision-engine/types";
 import type { DecisionRow } from "@/lib/database/repositories/decisions";
+import { isStalledProcessing } from "@/lib/decisions/status";
 import { formatCurrency } from "@/lib/utils";
 
 const STATUS_LABEL: Record<DecisionRow["status"], string> = {
@@ -29,6 +30,7 @@ export function DecisionCard({ decision }: { decision: DecisionRow }) {
   const verdict = decision.verdict as Verdict | null;
   const metrics = decision.deterministic_metrics as PurchaseAnalysisMetrics | null;
   const input = decision.input_data as Partial<PurchaseAnalysisInputParsed> | null;
+  const stalled = isStalledProcessing(decision);
 
   const vendorName = isPurchaseAnalysis ? input?.primaryOffer?.vendorName : null;
   const currency = metrics?.primary.tco.currency;
@@ -45,8 +47,8 @@ export function DecisionCard({ decision }: { decision: DecisionRow }) {
             {verdict ? (
               <VerdictBadge verdict={verdict} />
             ) : (
-              <Badge variant={decision.status === "failed" ? "destructive" : "secondary"}>
-                {STATUS_LABEL[decision.status]}
+              <Badge variant={decision.status === "failed" || stalled ? "destructive" : "secondary"}>
+                {stalled ? "Stalled" : STATUS_LABEL[decision.status]}
               </Badge>
             )}
           </div>

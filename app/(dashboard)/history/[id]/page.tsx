@@ -4,6 +4,7 @@ import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { DecisionOutcomeForm } from "@/components/history/DecisionOutcomeForm";
 import { ResultsView, toPurchaseDecisionResult } from "@/components/results/ResultsView";
 import { getDecisionById, type DecisionRow } from "@/lib/database/repositories/decisions";
+import { isStalledProcessing } from "@/lib/decisions/status";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 
 async function loadDecision(id: string): Promise<{ decision: DecisionRow | null; error: string | null }> {
@@ -63,6 +64,18 @@ function BackLink() {
 
 function DecisionBody({ decision }: { decision: DecisionRow }) {
   if (decision.status === "processing" || decision.status === "draft") {
+    if (isStalledProcessing(decision)) {
+      return (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          This analysis has been running for longer than expected and likely stalled (the AI request probably timed
+          out). It won&apos;t complete on its own —{" "}
+          <Link href="/analyze" className="underline underline-offset-4">
+            run it again
+          </Link>
+          .
+        </div>
+      );
+    }
     return <p className="text-sm text-muted-foreground">This analysis is still running — check back shortly.</p>;
   }
 

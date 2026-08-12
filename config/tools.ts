@@ -38,3 +38,9 @@ export function getDecisionModule(key: string): AnyDecisionModule | undefined {
 export function listDecisionModules(): AnyDecisionModule[] {
   return Object.values(DECISION_MODULES);
 }
+
+// The analyze page's module picker (a Client Component) reads from
+// config/module-catalog.ts instead of this file — importing this file's
+// DECISION_MODULES from client code would ship purchase-analysis's
+// server-only dependencies (the Anthropic SDK, via extract.ts -> lib/ai)
+// into the browser bundle. See that file for the full rationale.
