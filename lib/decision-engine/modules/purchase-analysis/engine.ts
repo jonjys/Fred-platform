@@ -4,8 +4,10 @@
  * cost.ts / roi.ts rather than reimplementing TCO or ROI math.
  */
 import { calculateTCO, compareCostAlternatives } from "../../cost";
+import type { DecisionEngine } from "../../engine-interface";
 import { calculateROI } from "../../roi";
 import type { CompanyContext } from "../../types";
+import { purchaseAnalysisInputSchema } from "./schemas";
 import type { PurchaseAnalysisInput, PurchaseAnalysisMetrics, PurchaseOffer, PurchaseOfferMetrics } from "./types";
 
 function calculateOfferMetrics(
@@ -82,3 +84,35 @@ function resolveBudgetFit(
     relevantCost,
   };
 }
+
+/**
+ * The portable `DecisionEngine` wrapper around `calculatePurchaseMetrics`
+ * above — same computation, unchanged. `calculate` requires `context`
+ * (unlike the interface's optional second parameter) because every part of
+ * this calculation is currency/VAT/budget-aware; there's no meaningful
+ * context-free purchase-analysis result.
+ */
+export const purchaseAnalysisEngine: DecisionEngine<PurchaseAnalysisInput, PurchaseAnalysisMetrics> = {
+  id: "purchase-analysis",
+  name: "Purchase Analysis Engine",
+  version: "1",
+  validate: (input) => {
+    const parsed = purchaseAnalysisInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { valid: false, errors: parsed.error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`) };
+    }
+    return { valid: true, data: parsed.data };
+  },
+  calculate: (input, context) => {
+    if (!context) {
+      throw new Error("purchaseAnalysisEngine.calculate requires a CompanyContext (currency/VAT/budget-dependent).");
+    }
+    return { result: calculatePurchaseMetrics(input, context) };
+  },
+  getMetadata: () => ({
+    id: "purchase-analysis",
+    name: "Purchase Analysis Engine",
+    version: "1",
+    description: "Deterministic TCO, ROI, and budget-fit calculation for a purchase decision.",
+  }),
+};
