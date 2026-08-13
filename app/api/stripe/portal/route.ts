@@ -7,7 +7,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,13 +31,16 @@ export async function POST(request: Request) {
       locale: "sv",
     });
     return NextResponse.json({ url: session.url });
-    } catch (e: unknown) {
+  } catch (e: unknown) {
     const err = e as { code?: string; message?: string };
-    if (err.code === 'resource_missing') {
+    if (err.code === "resource_missing") {
       const admin = createSupabaseServiceRoleClient();
-      await admin.from("profiles").update({ subscription_status: "canceled", stripe_customer_id: null }).eq("user_id", user.id);
+      await admin
+        .from("profiles")
+        .update({ subscription_status: "canceled", stripe_customer_id: null })
+        .eq("user_id", user.id);
       return NextResponse.json({ error: "Customer deleted in Stripe, reset to trial", reset: true }, { status: 400 });
     }
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Billing portal error" }, { status: 500 });
   }
 }
