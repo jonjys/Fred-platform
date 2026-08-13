@@ -6,41 +6,27 @@ import { getStripeClient } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
 
-/** Stripe subscription statuses that mean "the user should have access."
- * Everything else (canceled, unpaid, incomplete_expired, ...) is treated as
- * not-active — a simplification of Stripe's richer state machine that's
- * enough for a binary trial/active gate. */
-const ACTIVE_STRIPE_STATUSES: Stripe.Subscription.Status[] = ["active", "trialing"];
+const ACTIVE_STRIPE_STATUSES: Stripe.Subscription.Status[] = ["active", "trialing", "past_due"];
 
 function customerIdOf(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
   if (!customer) return null;
   return typeof customer === "string" ? customer : customer.id;
 }
 
-/**
- * POST /api/stripe/webhook — the only place subscription_status changes
- * outside of the initial 'trial' default. Uses the service-role Supabase
- * client because Stripe calls this unauthenticated (no user session/cookies
- * exist to scope a normal RLS-respecting request to).
- */
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
-
-  // Missing signature is a client error (not us, not configured) — 400, not 500.
   if (!signature) {
     return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    // Missing server config, not a bad request — fail loudly instead of
-    // silently accepting a payload we can't verify.
-    throw new Error("STRIPE_WEBHOOK_SECRET is not set. Configure it before accepting Stripe webhooks.");
+    throw new Error("STRIPE_WEBHOOK_SECRET is not set.");
   }
 
   const rawBody = await request.text();
-
   let event: Stripe.Event;
+  
   try {
     event = getStripeClient().webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (error) {
@@ -48,24 +34,63 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Log only event.type/event.id — never the raw body, which can carry
-  // customer PII (email, name, card metadata).
   console.log(`[stripe-webhook] Processing ${event.type} (${event.id})`);
-
   const supabase = createSupabaseServiceRoleClient();
+  const stripe = getStripeClient();
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const stripeCustomerId = customerIdOf(session.customer);
-        const userId = session.client_reference_id ?? undefined;
-
-        if (stripeCustomerId) {
-          await setProfileSubscriptionActive(supabase, { userId, stripeCustomerId });
-        } else {
-          console.error(`[stripe-webhook] checkout.session.completed ${session.id} has no customer id.`);
+        const stripeSubscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+        
+        let userId = session.client_reference_id || session.metadata?.userId || session.metadata?.user_id;
+        
+        // Fallback: hitta user via email från Stripe
+        if (!userId && session.customer_details?.email) {
+          const { data: { users } } = await supabase.auth.admin.listUsers();
+          const found = users.find(u => u.email?.toLowerCase() === session.customer_details?.email?.toLowerCase());
+          if (found) userId = found.id;
         }
+        
+        // Fallback: hämta customer från Stripe och kolla email
+        if (!userId && stripeCustomerId) {
+          try {
+            const customer = await stripe.customers.retrieve(stripeCustomerId) as Stripe.Customer;
+            if (customer.email) {
+              const { data: { users } } = await supabase.auth.admin.listUsers();
+              const found = users.find(u => u.email?.toLowerCase() === customer.email?.toLowerCase());
+              if (found) userId = found.id;
+            }
+          } catch {}
+        }
+
+        if (!stripeCustomerId) {
+          console.error(`[stripe-webhook] No customer id in session ${session.id}`);
+          break;
+        }
+
+        if (!userId) {
+          console.error(`[stripe-webhook] No userId found for session ${session.id}, customer ${stripeCustomerId}`);
+          break;
+        }
+
+        console.log(`[stripe-webhook] Activating user ${userId} customer ${stripeCustomerId}`);
+
+        // 1. Uppdatera profiles (din befintliga logik)
+        await setProfileSubscriptionActive(supabase, { userId, stripeCustomerId });
+
+        // 2. Uppdatera subscriptions tabellen också för att hålla allt i sync
+        await supabase.from('subscriptions').upsert({
+          user_id: userId,
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId || null,
+          plan: 'pro',
+          status: 'active',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
         break;
       }
 
@@ -76,8 +101,19 @@ export async function POST(request: Request) {
 
         if (ACTIVE_STRIPE_STATUSES.includes(subscription.status)) {
           await setProfileSubscriptionActive(supabase, { stripeCustomerId });
+          await supabase.from('subscriptions').update({ 
+            plan: 'pro', 
+            status: 'active',
+            stripe_subscription_id: subscription.id,
+            updated_at: new Date().toISOString()
+          }).eq('stripe_customer_id', stripeCustomerId);
         } else {
           await setProfileSubscriptionCanceled(supabase, stripeCustomerId);
+          await supabase.from('subscriptions').update({ 
+            plan: 'free', 
+            status: 'canceled',
+            updated_at: new Date().toISOString()
+          }).eq('stripe_customer_id', stripeCustomerId);
         }
         break;
       }
@@ -85,15 +121,23 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const stripeCustomerId = customerIdOf(subscription.customer);
-        if (stripeCustomerId) {
-          await setProfileSubscriptionCanceled(supabase, stripeCustomerId);
-        }
+        if (!stripeCustomerId) break;
+
+        console.log(`[stripe-webhook] Canceling customer ${stripeCustomerId}`);
+        
+        await setProfileSubscriptionCanceled(supabase, stripeCustomerId);
+        
+        // Uppdatera både via customer_id och subscription_id
+        await supabase.from('subscriptions').update({ 
+          plan: 'free', 
+          status: 'canceled',
+          updated_at: new Date().toISOString()
+        }).or(`stripe_customer_id.eq.${stripeCustomerId},stripe_subscription_id.eq.${subscription.id}`);
+
         break;
       }
 
       default:
-        // Intentionally ignore every other event type rather than erroring —
-        // Stripe retries on non-2xx, and we only care about these three.
         break;
     }
   } catch (error) {
