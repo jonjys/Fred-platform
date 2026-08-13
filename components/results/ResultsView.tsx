@@ -48,24 +48,24 @@ export function ResultsView({ result }: { result: PurchaseDecisionResult }) {
       <VerdictBanner verdict={result.verdict} />
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Financial breakdown</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Finansiell nedbrytning</h2>
         <FinancialMetricsBreakdown metrics={result.metrics} />
       </section>
 
       {result.aiAnalysis.summary && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Summary</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Sammanfattning</h2>
           <p className="text-sm leading-relaxed">{result.aiAnalysis.summary}</p>
         </section>
       )}
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Contract &amp; vendor risks</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Avtals- &amp; leverantörsrisker</h2>
         <RiskCards risks={result.risks} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Negotiation action plan</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Rekommendation &amp; förhandlingsplan</h2>
         <NegotiationActionPlan actions={result.recommendedActions} />
       </section>
     </div>

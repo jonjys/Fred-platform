@@ -33,7 +33,7 @@ export function FileDropzone({ file, onFileChange, accept = "application/pdf" }:
           type="button"
           onClick={() => onFileChange(null)}
           className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-          aria-label="Remove file"
+          aria-label="Ta bort fil"
         >
           <X className="h-4 w-4" />
         </button>
@@ -57,7 +57,7 @@ export function FileDropzone({ file, onFileChange, accept = "application/pdf" }:
     >
       <Upload className="h-5 w-5 text-muted-foreground" />
       <p className="text-sm text-muted-foreground">
-        Drop a PDF quote or contract here, or <span className="font-medium text-foreground">browse</span>
+        Släpp filer här, eller <span className="font-medium text-foreground">klicka för att ladda upp</span>
       </p>
       <input
         ref={inputRef}

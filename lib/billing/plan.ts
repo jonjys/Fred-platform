@@ -9,7 +9,7 @@ export const UPGRADE_PLAN = {
   description: "50 analyser per månad",
   currency: "sek",
   /** In öre (SEK's minor unit), matching Stripe's integer-minor-unit convention. */
-  unitAmount: 49900,
+  unitAmount: 99000,
   interval: "month" as const,
   /** Single source of truth for the Pro usage cap — consumed by both the
    * /api/analyze gate and the billing page's usage display. */

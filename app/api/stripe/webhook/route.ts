@@ -25,10 +25,17 @@ function customerIdOf(customer: string | Stripe.Customer | Stripe.DeletedCustome
  */
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!signature || !webhookSecret) {
-    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  // Missing signature is a client error (not us, not configured) — 400, not 500.
+  if (!signature) {
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+  }
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    // Missing server config, not a bad request — fail loudly instead of
+    // silently accepting a payload we can't verify.
+    throw new Error("STRIPE_WEBHOOK_SECRET is not set. Configure it before accepting Stripe webhooks.");
   }
 
   const rawBody = await request.text();
@@ -40,6 +47,10 @@ export async function POST(request: Request) {
     console.error("[stripe-webhook] Signature verification failed.", error);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
+
+  // Log only event.type/event.id — never the raw body, which can carry
+  // customer PII (email, name, card metadata).
+  console.log(`[stripe-webhook] Processing ${event.type} (${event.id})`);
 
   const supabase = createSupabaseServiceRoleClient();
 

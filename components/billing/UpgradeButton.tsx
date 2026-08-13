@@ -16,7 +16,7 @@ export function UpgradeButton() {
             Startar…
           </>
         ) : (
-          "Uppgradera – 499 kr/mån (50 analyser)"
+          "Uppgradera – 990 kr/mån (50 analyser)"
         )}
       </Button>
       {error && <p className="text-sm text-destructive">{error}</p>}
