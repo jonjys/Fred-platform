@@ -20,6 +20,15 @@ export interface ModuleCatalogEntry {
   label: string;
   description: string;
   enabled: boolean;
+  /** Dedicated page route for modules that get one beyond the shared
+   * /analyze form (e.g. debt-optimization's own dashboard). Undefined for
+   * modules that only ever render inside the analyze picker. */
+  route?: string;
+  /** Always null in this file — kept only as a visible "not wired up yet"
+   * marker next to `enabled`. Never a real engine reference: this file has
+   * zero imports from lib/decision-engine (see file header), and that must
+   * stay true even for disabled entries. */
+  engine?: null;
 }
 
 export const MODULE_CATALOG: ModuleCatalogEntry[] = [
@@ -32,10 +41,14 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
   },
   {
     // Kommer från debt-optimizer-standalone när P0-buggar är gröna.
+    // Flip `enabled` to true (and wire the real engine into config/tools.ts)
+    // once that repo reports all 5 P0 bugs fixed.
     key: "debt-optimization",
     label: "Skuldoptimering",
     description: "Ska du refinansiera, konsolidera eller lösa lånet? (Kommer snart)",
     enabled: false,
+    route: "/dashboard/debt",
+    engine: null,
   },
   {
     key: "roi-analysis",
@@ -44,3 +57,10 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
     enabled: false,
   },
 ];
+
+/** Look up a single catalog entry by key — e.g.
+ * `getModuleCatalogEntry("debt-optimization")?.enabled` to gate a nav link
+ * or page on a module's rollout state. */
+export function getModuleCatalogEntry(key: string): ModuleCatalogEntry | undefined {
+  return MODULE_CATALOG.find((entry) => entry.key === key);
+}

@@ -11,13 +11,13 @@ export function ComingSoonModulePanel({ label, description }: { label: string; d
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Construction className="h-5 w-5 text-muted-foreground" />
-          {label} — Coming soon
+          {label} — Kommer snart
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          In the meantime, use Purchase Analysis for supplier and vendor decisions.
+          Använd Inköpsanalys för leverantörs- och avtalsbeslut under tiden.
         </p>
       </CardContent>
     </Card>

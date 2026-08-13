@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MODULE_CATALOG } from "./module-catalog";
+import { getModuleCatalogEntry, MODULE_CATALOG } from "./module-catalog";
 
 describe("MODULE_CATALOG", () => {
   it("contains a debt-optimization entry, disabled until the standalone engine ships", () => {
@@ -7,6 +7,8 @@ describe("MODULE_CATALOG", () => {
 
     expect(entry).toBeDefined();
     expect(entry?.enabled).toBe(false);
+    expect(entry?.route).toBe("/dashboard/debt");
+    expect(entry?.engine).toBeNull();
   });
 
   it("contains the enabled purchase-analysis entry", () => {
@@ -14,5 +16,15 @@ describe("MODULE_CATALOG", () => {
 
     expect(entry).toBeDefined();
     expect(entry?.enabled).toBe(true);
+  });
+});
+
+describe("getModuleCatalogEntry", () => {
+  it("finds an entry by key", () => {
+    expect(getModuleCatalogEntry("debt-optimization")?.label).toBe("Skuldoptimering");
+  });
+
+  it("returns undefined for an unknown key", () => {
+    expect(getModuleCatalogEntry("does-not-exist")).toBeUndefined();
   });
 });
