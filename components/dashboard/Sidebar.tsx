@@ -1,10 +1,11 @@
 "use client";
 
-import { History, LayoutDashboard, Menu, Sparkles, X } from "lucide-react";
+import { CircleDollarSign, History, LayoutDashboard, Menu, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ComponentType } from "react";
 import { UserMenu } from "@/components/dashboard/UserMenu";
+import { getModuleCatalogEntry } from "@/config/module-catalog";
 import { cn } from "@/lib/utils";
 
 interface NavLink {
@@ -13,11 +14,19 @@ interface NavLink {
   icon: ComponentType<{ className?: string }>;
 }
 
-const NAV_LINKS: NavLink[] = [
+const BASE_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Översikt", icon: LayoutDashboard },
   { href: "/analyze", label: "Analysera", icon: Sparkles },
   { href: "/history", label: "Historik", icon: History },
 ];
+
+// Hidden until debt-optimization is flipped to enabled: true in
+// config/module-catalog.ts — no nav link to a module that isn't live yet.
+const debtModule = getModuleCatalogEntry("debt-optimization");
+const NAV_LINKS: NavLink[] =
+  debtModule?.enabled && debtModule.route
+    ? [...BASE_NAV_LINKS, { href: debtModule.route, label: debtModule.label, icon: CircleDollarSign }]
+    : BASE_NAV_LINKS;
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -28,6 +37,7 @@ function resolveTitle(pathname: string): string {
   if (pathname.startsWith("/settings")) return "Inställningar";
   if (pathname.startsWith("/analyze")) return "Analysera";
   if (pathname.startsWith("/history")) return "Historik";
+  if (pathname.startsWith("/dashboard/debt")) return "Skuldoptimering";
   if (pathname.startsWith("/dashboard")) return "Översikt";
   return "FRED";
 }
