@@ -15,16 +15,16 @@ export function DebtOptimizerForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Construction className="h-5 w-5 text-muted-foreground" />
-          Debt Optimization — Coming soon
+          Skuldoptimering — Kommer snart
         </CardTitle>
         <CardDescription>
-          Should you refinance, consolidate, or pay off? This module is waiting on a verified, deterministic
-          calculation engine before it goes live — no timeline promises, but it&apos;s on the roadmap.
+          Ska du refinansiera, konsolidera eller lösa lånet? Den här modulen väntar på en verifierad, deterministisk
+          beräkningsmotor innan den går live — inget löfte om tidsplan, men den finns på färdplanen.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          In the meantime, use Purchase Analysis for supplier and vendor decisions.
+          Använd Inköpsanalys för leverantörs- och avtalsbeslut under tiden.
         </p>
       </CardContent>
     </Card>

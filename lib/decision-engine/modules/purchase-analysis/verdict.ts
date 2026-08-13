@@ -82,11 +82,13 @@ export function resolvePurchaseVerdict(
     (reason): reason is string => reason !== null,
   );
 
+  // `code` stays a stable English identifier (persisted/compared elsewhere);
+  // `label` is the only user-facing string, so only it is Swedish.
   if (totalScore >= 2) {
-    return { code: "BUY", label: "Buy", severity: "positive", confidence: confidenceFromScore(totalScore), reasoning };
+    return { code: "BUY", label: "Köp", severity: "positive", confidence: confidenceFromScore(totalScore), reasoning };
   }
   if (totalScore <= -2) {
-    return { code: "REJECT", label: "Reject", severity: "negative", confidence: confidenceFromScore(totalScore), reasoning };
+    return { code: "REJECT", label: "Avstå", severity: "negative", confidence: confidenceFromScore(totalScore), reasoning };
   }
-  return { code: "NEGOTIATE", label: "Negotiate", severity: "neutral", confidence: confidenceFromScore(totalScore), reasoning };
+  return { code: "NEGOTIATE", label: "Förhandla", severity: "neutral", confidence: confidenceFromScore(totalScore), reasoning };
 }

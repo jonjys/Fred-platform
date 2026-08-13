@@ -77,7 +77,7 @@ export function SupplierHistoryPanel({ companyId, vendorName }: { companyId: str
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
           <History className="h-4 w-4" />
-          Supplier history
+          Leverantörshistorik
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -91,7 +91,7 @@ export function SupplierHistoryPanel({ companyId, vendorName }: { companyId: str
                     {decision.title}
                   </Link>
                   <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-                    {new Date(decision.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short" })}
+                    {new Date(decision.createdAt).toLocaleDateString("sv-SE", { year: "numeric", month: "short" })}
                     {decision.verdict && <VerdictBadge verdict={decision.verdict} />}
                     {decision.finalDecision && (
                       <span className="text-foreground">→ {decision.finalDecision}</span>

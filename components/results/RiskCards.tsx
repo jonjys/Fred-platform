@@ -12,11 +12,18 @@ const SEVERITY_BADGE_CLASS: Record<RiskSeverity, string> = {
   low: "bg-secondary text-secondary-foreground hover:bg-secondary",
 };
 
+const SEVERITY_LABEL: Record<RiskSeverity, string> = {
+  critical: "kritisk",
+  high: "hög",
+  medium: "medel",
+  low: "låg",
+};
+
 /** Generic over `Risk[]` — works for any module's AI-identified risks, not
  * just contract risks from purchase-analysis. */
 export function RiskCards({ risks }: { risks: Risk[] }) {
   if (risks.length === 0) {
-    return <p className="text-sm text-muted-foreground">No significant risks were identified.</p>;
+    return <p className="text-sm text-muted-foreground">Inga betydande risker identifierades.</p>;
   }
 
   const sorted = [...risks].sort(
@@ -30,7 +37,7 @@ export function RiskCards({ risks }: { risks: Risk[] }) {
           <CardContent className="space-y-2 pt-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium">{risk.category}</span>
-              <Badge className={SEVERITY_BADGE_CLASS[risk.severity]}>{risk.severity}</Badge>
+              <Badge className={SEVERITY_BADGE_CLASS[risk.severity]}>{SEVERITY_LABEL[risk.severity]}</Badge>
             </div>
             <p className="text-sm text-muted-foreground">{risk.description}</p>
           </CardContent>

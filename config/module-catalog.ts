@@ -31,6 +31,7 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
     enabled: true,
   },
   {
+    // Kommer från debt-optimizer-standalone när P0-buggar är gröna.
     key: "debt-optimization",
     label: "Skuldoptimering",
     description: "Ska du refinansiera, konsolidera eller lösa lånet? (Kommer snart)",

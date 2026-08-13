@@ -7,7 +7,7 @@ import type { RecommendedAction } from "@/lib/decision-engine/types";
  * "due diligence checklist" render through the same component. */
 export function NegotiationActionPlan({ actions }: { actions: RecommendedAction[] }) {
   if (actions.length === 0) {
-    return <p className="text-sm text-muted-foreground">No specific action points were generated.</p>;
+    return <p className="text-sm text-muted-foreground">Inga specifika åtgärdspunkter genererades.</p>;
   }
 
   return (
@@ -24,7 +24,7 @@ export function NegotiationActionPlan({ actions }: { actions: RecommendedAction[
               </div>
               <p className="text-sm">{action.description}</p>
               {action.potentialImpact && (
-                <p className="text-xs text-muted-foreground">Potential impact: {action.potentialImpact}</p>
+                <p className="text-xs text-muted-foreground">Möjlig påverkan: {action.potentialImpact}</p>
               )}
             </div>
           </CardContent>

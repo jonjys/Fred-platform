@@ -25,19 +25,19 @@ export function FinancialMetricsBreakdown({ metrics }: { metrics: PurchaseAnalys
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Year 1 total" value={formatCurrency(primary.tco.year1.totalInclVat, currency)} sub="incl. VAT" />
-        <StatTile label="3-year TCO" value={formatCurrency(primary.tco.year3.totalInclVat, currency)} sub="incl. VAT" />
+        <StatTile label="År 1 totalt" value={formatCurrency(primary.tco.year1.totalInclVat, currency)} sub="inkl. moms" />
+        <StatTile label="TCO 3 år" value={formatCurrency(primary.tco.year3.totalInclVat, currency)} sub="inkl. moms" />
         <StatTile
-          label="Effective monthly cost"
+          label="Effektiv månadskostnad"
           value={formatCurrency(primary.tco.monthlyRecurringCost, currency)}
         />
-        <StatTile label="Hidden fees" value={formatCurrency(primary.tco.hiddenFeesTotal, currency)} />
+        <StatTile label="Dolda avgifter" value={formatCurrency(primary.tco.hiddenFeesTotal, currency)} />
       </div>
 
       {budgetFit.budgetAmount !== null && (
         <div className="flex items-center gap-2 text-sm">
           <Badge variant={budgetFit.withinBudget ? "secondary" : "destructive"}>
-            {budgetFit.withinBudget ? "Within budget" : "Over budget"}
+            {budgetFit.withinBudget ? "Inom budget" : "Över budget"}
           </Badge>
           <span className="text-muted-foreground">
             {formatCurrency(budgetFit.relevantCost, currency)} vs. {formatCurrency(budgetFit.budgetAmount, currency)} budget
@@ -48,7 +48,7 @@ export function FinancialMetricsBreakdown({ metrics }: { metrics: PurchaseAnalys
       {comparison.length > 1 && (
         <Card>
           <CardContent className="pt-4">
-            <div className="mb-3 text-sm font-medium">3-year cost comparison</div>
+            <div className="mb-3 text-sm font-medium">Kostnadsjämförelse, 3 år</div>
             <div className="space-y-2">
               {comparison
                 .slice()
@@ -56,7 +56,7 @@ export function FinancialMetricsBreakdown({ metrics }: { metrics: PurchaseAnalys
                 .map((alt) => (
                   <div key={alt.id} className="flex items-center justify-between text-sm">
                     <span className={alt.isCheapest ? "font-medium" : ""}>
-                      {alt.label} {alt.isCheapest && <Badge className="ml-2 align-middle">Cheapest</Badge>}
+                      {alt.label} {alt.isCheapest && <Badge className="ml-2 align-middle">Billigast</Badge>}
                     </span>
                     <span className="text-muted-foreground">
                       {formatCurrency(alt.totalCost, currency)}

@@ -27,7 +27,7 @@ export function VerdictBanner({ verdict }: { verdict: Verdict }) {
         <div>
           <div className={cn("text-2xl font-bold tracking-tight", style.text)}>{verdict.label}</div>
           <div className="text-sm text-muted-foreground">
-            {formatPercentage(verdict.confidence * 100)} confidence
+            {formatPercentage(verdict.confidence * 100)} säkerhet
           </div>
         </div>
       </div>

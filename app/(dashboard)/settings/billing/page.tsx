@@ -79,6 +79,7 @@ export default async function BillingPage({
 
           {isActive ? (
             <div className="space-y-2">
+              <p className="font-mono text-sm text-zinc-50">FRED Pro — 990 kr per månad</p>
               <p className="text-sm text-zinc-400">
                 {used} av {UPGRADE_PLAN.monthlyAnalysisLimit} analyser använda denna månad
               </p>
