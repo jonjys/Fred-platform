@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDashboardStats } from "./stats";
+import { computeDashboardStats, computeSavingsTrend } from "./stats";
 import type { DecisionRow } from "@/lib/database/repositories/decisions";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
@@ -110,5 +110,61 @@ describe("computeDashboardStats", () => {
       expect(stats.totalNetBenefit).toBe(-500);
       expect(stats.totalSaved).toBeNull();
     });
+  });
+});
+
+describe("computeSavingsTrend", () => {
+  it("sums only the last 30 days into currentPeriod, excluding older decisions", () => {
+    const decisions = [
+      decision({ created_at: "2026-08-10T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000) as never }),
+      decision({ created_at: "2026-05-01T00:00:00.000Z", deterministic_metrics: withRoi(20, 5000) as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.currentPeriod.total).toBe(1000);
+  });
+
+  it("sums days 31-60 back into previousPeriod", () => {
+    const decisions = [
+      decision({ created_at: "2026-06-20T00:00:00.000Z", deterministic_metrics: withRoi(20, 2000) as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.previousPeriod.total).toBe(2000);
+  });
+
+  it("computes a positive trend percentage when current beats previous", () => {
+    const decisions = [
+      decision({ created_at: "2026-08-10T00:00:00.000Z", deterministic_metrics: withRoi(20, 1500) as never }),
+      decision({ created_at: "2026-06-20T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000) as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.trendPercentage).toBe(50);
+  });
+
+  it("is null when there is no previous-period data to compare against", () => {
+    const decisions = [
+      decision({ created_at: "2026-08-10T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000) as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.trendPercentage).toBeNull();
+  });
+
+  it("is null rather than dividing by zero when the previous period total is zero", () => {
+    // netBenefit <= 0 entries are excluded entirely, so a previous period
+    // with only a loss has no positive total to divide by — not a 0.
+    const decisions = [
+      decision({ created_at: "2026-08-10T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000) as never }),
+      decision({ created_at: "2026-06-20T00:00:00.000Z", deterministic_metrics: withRoi(-5, -200) as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.trendPercentage).toBeNull();
+  });
+
+  it("is null when the two periods' majority currencies differ", () => {
+    const decisions = [
+      decision({ created_at: "2026-08-10T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000, "SEK") as never }),
+      decision({ created_at: "2026-06-20T00:00:00.000Z", deterministic_metrics: withRoi(20, 1000, "EUR") as never }),
+    ];
+    const trend = computeSavingsTrend(decisions, NOW);
+    expect(trend.trendPercentage).toBeNull();
   });
 });
