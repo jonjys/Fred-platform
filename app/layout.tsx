@@ -7,8 +7,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "AI Business Decision OS",
-  description: "Decision Intelligence Platform — TCO, ROI, and risk analysis for B2B purchasing decisions.",
+  title: "FRED",
+  description: "FRED analyserar kostnad, risk och ROI på 30 sekunder — sluta gissa, börja besluta.",
 };
 
 // Next.js's dedicated Viewport API (the idiomatic App Router equivalent of
@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="sv" className="dark">
       <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
       </body>

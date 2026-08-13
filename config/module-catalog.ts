@@ -25,21 +25,21 @@ export interface ModuleCatalogEntry {
 export const MODULE_CATALOG: ModuleCatalogEntry[] = [
   {
     key: "purchase-analysis",
-    label: "AI Purchase Analyzer",
+    label: "Inköpsanalys",
     description:
-      "Analyzes a purchase decision — real 1yr/3yr cost, hidden fees, contract risk, and supplier alternatives — and recommends BUY, NEGOTIATE, or REJECT.",
+      "Analyserar ett inköpsbeslut — verklig kostnad över 1/3 år, dolda avgifter, avtalsrisk och leverantörsalternativ — och rekommenderar KÖP, FÖRHANDLA eller AVSLÅ.",
     enabled: true,
   },
   {
     key: "debt-optimization",
-    label: "Debt Optimization",
-    description: "Should you refinance, consolidate, or pay off? (Coming soon)",
+    label: "Skuldoptimering",
+    description: "Ska du refinansiera, konsolidera eller lösa lånet? (Kommer snart)",
     enabled: false,
   },
   {
     key: "roi-analysis",
-    label: "ROI Analysis",
-    description: "Coming soon.",
+    label: "ROI-analys",
+    description: "Kommer snart.",
     enabled: false,
   },
 ];

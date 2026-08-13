@@ -30,22 +30,14 @@ export default async function SettingsPage() {
   const { companies, error } = await loadCompanies();
 
   if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <ConfigErrorNotice title="Couldn't load your companies" />
-      </div>
-    );
+    return <ConfigErrorNotice title="Kunde inte ladda dina företag" />;
   }
 
   return (
-    <div className="max-w-lg space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Settings</h1>
-        <p className="text-muted-foreground">
-          Your AI Wallet — the company context every analysis uses for budget fit, VAT, and margin checks.
-        </p>
-      </div>
+    <div className="max-w-lg space-y-6">
+      <p className="text-sm text-zinc-400">
+        Företagsprofilen som varje analys använder för budget, moms och marginalkontroller.
+      </p>
 
       {companies.length === 0 ? (
         <CreateCompanyForm />
@@ -59,8 +51,8 @@ export default async function SettingsPage() {
       )}
 
       <p>
-        <Link href="/settings/billing" className="text-sm underline underline-offset-4">
-          Billing &amp; usage →
+        <Link href="/settings/billing" className="text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200">
+          Fakturering och användning →
         </Link>
       </p>
     </div>

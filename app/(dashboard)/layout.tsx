@@ -1,17 +1,9 @@
-import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
-import { UserMenu } from "@/components/dashboard/UserMenu";
+import { DesktopSidebar, Topbar } from "@/components/dashboard/Sidebar";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import type { User } from "@supabase/supabase-js";
-
-// Settings lives in the avatar dropdown (UserMenu) now, not the top nav.
-const NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/analyze", label: "Analyze" },
-  { href: "/history", label: "History" },
-];
 
 async function getUserSafely(): Promise<{ user: User | null; configError: string | null }> {
   try {
@@ -40,11 +32,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (configError) {
     return (
       <div className="flex min-h-screen flex-col">
-        <header className="border-b border-border px-6 py-4">
-          <span className="font-semibold">AI Business Decision OS</span>
+        <header className="border-b border-zinc-800 px-6 py-4">
+          <span className="text-base font-semibold text-zinc-50">FRED</span>
         </header>
         <main className="flex-1 p-6">
-          <ConfigErrorNotice title="Couldn't connect to Supabase" />
+          <ConfigErrorNotice title="Kunde inte ansluta till Supabase" />
         </main>
       </div>
     );
@@ -54,22 +46,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
+  const email = user.email ?? "";
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-          <span className="font-semibold tracking-tight">AI Business Decision OS</span>
-          <nav className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-foreground">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <UserMenu email={user.email ?? ""} />
-      </header>
-      <main className="flex-1 p-6">{children}</main>
+    <div className="min-h-screen bg-zinc-950">
+      <DesktopSidebar email={email} />
+      <div className="lg:pl-60">
+        <Topbar email={email} />
+        <main className="mx-auto max-w-[1200px] px-4 py-4 lg:px-6 lg:py-6">{children}</main>
+      </div>
     </div>
   );
 }

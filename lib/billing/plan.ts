@@ -5,8 +5,8 @@
  * scattered across the checkout route and billing page.
  */
 export const UPGRADE_PLAN = {
-  name: "Pro",
-  description: "50 analyses per month",
+  name: "FRED Pro",
+  description: "50 analyser per månad",
   currency: "sek",
   /** In öre (SEK's minor unit), matching Stripe's integer-minor-unit convention. */
   unitAmount: 49900,

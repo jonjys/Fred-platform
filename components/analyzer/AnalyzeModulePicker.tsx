@@ -35,7 +35,7 @@ export function AnalyzeModulePicker({ companies }: { companies: CompanyOption[] 
     <div className="max-w-2xl space-y-6">
       {MODULE_CATALOG.length > 1 && (
         <div className="space-y-2">
-          <Label>Decision type</Label>
+          <Label>Typ av beslut</Label>
           <Select value={moduleKey} onValueChange={setModuleKey}>
             <SelectTrigger className="w-full sm:w-72">
               <SelectValue />
@@ -44,7 +44,7 @@ export function AnalyzeModulePicker({ companies }: { companies: CompanyOption[] 
               {MODULE_CATALOG.map((entry) => (
                 <SelectItem key={entry.key} value={entry.key} disabled={!entry.enabled}>
                   {entry.label}
-                  {!entry.enabled ? " (Coming soon)" : ""}
+                  {!entry.enabled ? " – Kommer snart" : ""}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -22,25 +22,17 @@ export default async function HistoryPage() {
   const { decisions, error } = await loadDecisions();
 
   if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">History</h1>
-        <ConfigErrorNotice title="Couldn't load your decision history" />
-      </div>
-    );
+    return <ConfigErrorNotice title="Kunde inte ladda din beslutshistorik" />;
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">History</h1>
-        <p className="text-muted-foreground">Every decision you&apos;ve run — the Decision Graph.</p>
-      </div>
+    <div className="space-y-6">
+      <p className="text-sm text-zinc-400">Alla beslut du har kört.</p>
 
       {decisions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No decisions yet. Head to <span className="font-medium text-foreground">Analyze</span> to run your first
-          one.
+        <p className="text-sm text-zinc-500">
+          Inga beslut ännu. Gå till <span className="font-medium text-zinc-50">Analysera</span> för att köra ditt
+          första.
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -118,7 +118,7 @@ export function PurchaseAnalyzerForm({
       const monthly = Number(primaryOffer.monthlyCost || 0);
       if (upfront === 0 && monthly === 0) {
         setStatus("error");
-        setError("Enter an upfront or monthly cost for the primary offer, or attach a document/quote instead.");
+        setError("Ange en engångskostnad eller månadskostnad för huvudofferten, eller bifoga ett dokument/offert.");
         return;
       }
     }
@@ -130,7 +130,7 @@ export function PurchaseAnalyzerForm({
     // a document fact) — so unlike the offer fields, a document attachment
     // can't fill this one in server-side. Derive a reasonable default from
     // the filename rather than blocking a PDF-only submission on it.
-    const title = decisionTitle.trim() || (file ? file.name.replace(/\.[^./]+$/, "") : "Untitled decision");
+    const title = decisionTitle.trim() || (file ? file.name.replace(/\.[^./]+$/, "") : "Namnlöst beslut");
 
     const input = {
       decisionTitle: title,
@@ -195,7 +195,7 @@ export function PurchaseAnalyzerForm({
       setStatus("idle");
     } catch {
       setStatus("error");
-      setError("Network error — could not reach the analysis pipeline.");
+      setError("Nätverksfel — kunde inte nå analyspipelinen.");
     }
   }
 
@@ -203,7 +203,7 @@ export function PurchaseAnalyzerForm({
     return (
       <div className="space-y-4">
         <Button variant="outline" size="sm" onClick={resetForm}>
-          ← Run another analysis
+          ← Kör en till analys
         </Button>
         <ResultsView result={result} />
       </div>
@@ -214,8 +214,8 @@ export function PurchaseAnalyzerForm({
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Decision</CardTitle>
-          <CardDescription>BUY, NEGOTIATE, or REJECT — backed by real TCO, not a gut feeling.</CardDescription>
+          <CardTitle>Beslut</CardTitle>
+          <CardDescription>KÖP, FÖRHANDLA eller AVSLÅ — baserat på verklig TCO, inte magkänsla.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {initial?.notes && (
@@ -225,7 +225,7 @@ export function PurchaseAnalyzerForm({
           )}
           {companies.length > 1 && (
             <div className="space-y-2">
-              <Label>Company</Label>
+              <Label>Företag</Label>
               <Select value={companyId} onValueChange={setCompanyId}>
                 <SelectTrigger>
                   <SelectValue />
@@ -242,23 +242,23 @@ export function PurchaseAnalyzerForm({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="decisionTitle">Decision title</Label>
+            <Label htmlFor="decisionTitle">Beslutstitel</Label>
             <Input
               id="decisionTitle"
               required={!hasDocumentSource}
               value={decisionTitle}
               onChange={(event) => setDecisionTitle(event.target.value)}
-              placeholder={hasDocumentSource ? "Defaults to the file name if left blank" : "New CRM subscription"}
+              placeholder={hasDocumentSource ? "Fylls i från filnamnet om det lämnas tomt" : "Nytt CRM-abonnemang"}
             />
           </div>
         </CardContent>
       </Card>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Costs</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Kostnader</h2>
         <OfferFieldset
           idPrefix="primary"
-          title="Primary offer"
+          title="Huvudoffert"
           value={primaryOffer}
           onChange={setPrimaryOffer}
           required={!hasDocumentSource}
@@ -267,13 +267,13 @@ export function PurchaseAnalyzerForm({
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Alternatives</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Alternativ</h2>
 
         {alternativeOffers.map((offer, index) => (
           <OfferFieldset
             key={index}
             idPrefix={`alt-${index}`}
-            title={`Alternative offer ${index + 1}`}
+            title={`Alternativ offert ${index + 1}`}
             value={offer}
             onChange={(next) =>
               setAlternativeOffers((offers) => offers.map((o, i) => (i === index ? next : o)))
@@ -290,21 +290,21 @@ export function PurchaseAnalyzerForm({
           onClick={() => setAlternativeOffers((offers) => [...offers, emptyOfferDraft()])}
         >
           <Plus className="mr-1 h-3.5 w-3.5" />
-          Add supplier alternative
+          Lägg till alternativ leverantör
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Additional context</CardTitle>
-          <CardDescription>Optional — improves ROI and contract-risk accuracy.</CardDescription>
+          <CardTitle className="text-base">Ytterligare information</CardTitle>
+          <CardDescription>Valfritt — förbättrar noggrannheten för ROI och avtalsrisk.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="vatRateOverride">VAT rate override (%)</Label>
-                <FieldHint text="Overrides your company's default VAT rate for this decision only — leave blank to use the company setting." />
+                <Label htmlFor="vatRateOverride">Momssats, override (%)</Label>
+                <FieldHint text="Åsidosätter företagets standardmoms för just det här beslutet — lämna tomt för att använda företagsinställningen." />
               </div>
               <Input
                 id="vatRateOverride"
@@ -314,13 +314,14 @@ export function PurchaseAnalyzerForm({
                 step="0.1"
                 value={vatRateOverride}
                 onChange={(event) => setVatRateOverride(event.target.value)}
-                placeholder="Uses company default"
+                placeholder="Använder företagets standard"
+                className="font-mono"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="expectedMonthlyBenefit">Expected monthly benefit</Label>
-                <FieldHint text="Monthly savings or revenue this purchase is expected to generate — enables the ROI and payback-period calculation." />
+                <Label htmlFor="expectedMonthlyBenefit">Förväntad månadsnytta</Label>
+                <FieldHint text="Månatlig besparing eller intäkt köpet förväntas ge — möjliggör beräkning av ROI och återbetalningstid." />
               </div>
               <Input
                 id="expectedMonthlyBenefit"
@@ -329,30 +330,31 @@ export function PurchaseAnalyzerForm({
                 step="0.01"
                 value={expectedMonthlyBenefit}
                 onChange={(event) => setExpectedMonthlyBenefit(event.target.value)}
-                placeholder="For ROI / payback period"
+                placeholder="För ROI / återbetalningstid"
+                className="font-mono"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="documentText">Quote description / notes</Label>
+            <Label htmlFor="documentText">Offertbeskrivning / anteckningar</Label>
             <Textarea
               id="documentText"
               rows={4}
               value={documentText}
               onChange={(event) => setDocumentText(event.target.value)}
-              placeholder="Paste the vendor's quote, contract terms, or any relevant context here"
+              placeholder="Klistra in leverantörens offert, avtalsvillkor eller annan relevant kontext här"
             />
           </div>
 
           <Separator />
 
           <div className="space-y-2">
-            <Label>Or upload a PDF quote / contract</Label>
+            <Label>Eller ladda upp en PDF-offert / avtal</Label>
             <FileDropzone file={file} onFileChange={setFile} />
             <p className="text-xs text-muted-foreground">
-              Uploading a document or pasting text above makes the offer fields optional — Claude reads the vendor,
-              costs, and terms out of it for you.
+              Att ladda upp ett dokument eller klistra in text ovan gör offertfälten valfria — Claude läser
+              leverantör, kostnader och villkor åt dig.
             </p>
           </div>
         </CardContent>
@@ -365,7 +367,7 @@ export function PurchaseAnalyzerForm({
             <>
               {" "}
               <Link href={billingUrl} className="underline underline-offset-4">
-                Upgrade your plan
+                Uppgradera din plan
               </Link>
               .
             </>
@@ -373,14 +375,14 @@ export function PurchaseAnalyzerForm({
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={status === "submitting" || !companyId} className="w-full">
+      <Button type="submit" size="lg" disabled={status === "submitting" || !companyId} className="w-full sm:w-auto sm:ml-auto sm:flex">
         {status === "submitting" ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Analyzing with Claude…
+            Analyserar
           </>
         ) : (
-          "Analyze decision"
+          "Analysera"
         )}
       </Button>
     </form>

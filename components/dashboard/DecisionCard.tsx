@@ -11,11 +11,11 @@ import { isStalledProcessing } from "@/lib/decisions/status";
 import { formatCurrency } from "@/lib/utils";
 
 const STATUS_LABEL: Record<DecisionRow["status"], string> = {
-  draft: "Draft",
-  processing: "Processing…",
-  completed: "Completed",
-  failed: "Failed",
-  archived: "Archived",
+  draft: "Utkast",
+  processing: "Bearbetar…",
+  completed: "Klar",
+  failed: "Misslyckades",
+  archived: "Arkiverad",
 };
 
 /**
@@ -48,26 +48,26 @@ export function DecisionCard({ decision }: { decision: DecisionRow }) {
               <VerdictBadge verdict={verdict} />
             ) : (
               <Badge variant={decision.status === "failed" || stalled ? "destructive" : "secondary"}>
-                {stalled ? "Stalled" : STATUS_LABEL[decision.status]}
+                {stalled ? "Fastnat" : STATUS_LABEL[decision.status]}
               </Badge>
             )}
           </div>
 
           {isPurchaseAnalysis && metrics && currency && (
-            <div className="flex gap-4 text-sm">
+            <div className="flex gap-4 font-mono text-sm">
               <span>
-                <span className="text-muted-foreground">Year 1: </span>
+                <span className="font-sans text-muted-foreground">År 1: </span>
                 {formatCurrency(metrics.primary.tco.year1.totalInclVat, currency)}
               </span>
               <span>
-                <span className="text-muted-foreground">3-year: </span>
+                <span className="font-sans text-muted-foreground">3 år: </span>
                 {formatCurrency(metrics.primary.tco.year3.totalInclVat, currency)}
               </span>
             </div>
           )}
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            {new Date(decision.created_at).toLocaleDateString(undefined, {
+            {new Date(decision.created_at).toLocaleDateString("sv-SE", {
               year: "numeric",
               month: "short",
               day: "numeric",
@@ -75,7 +75,7 @@ export function DecisionCard({ decision }: { decision: DecisionRow }) {
             {decision.final_decision && (
               <span className="flex items-center gap-1 text-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Outcome logged
+                Utfall registrerat
               </span>
             )}
           </div>
