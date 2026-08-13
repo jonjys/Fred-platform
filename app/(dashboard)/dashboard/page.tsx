@@ -5,61 +5,109 @@ import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
 import { RecentDecisionsList } from "@/components/dashboard/RecentDecisionsList";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { UPGRADE_PLAN } from "@/lib/billing/plan";
+import { currentMonthlyUsage, daysLeftInMonthlyPeriod } from "@/lib/billing/usage";
 import { listDecisionsForUser, type DecisionRow } from "@/lib/database/repositories/decisions";
-import { computeDashboardStats } from "@/lib/dashboard/stats";
+import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
+import { computeSavingsTrend } from "@/lib/dashboard/stats";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatPercentage } from "@/lib/utils";
 
 const RECENT_LIMIT = 5;
 // Bounds the stats computation to a reasonable window rather than every
-// decision the account has ever run — 100 is generous for "since start"
-// aggregates without an unbounded query.
+// decision the account has ever run — 100 is generous for both the
+// "since start" and 30/60-day-trend aggregates without an unbounded query.
 const STATS_LIMIT = 100;
 
-async function loadDecisions(): Promise<{ decisions: DecisionRow[]; error: string | null }> {
+async function loadDashboardData(): Promise<{
+  decisions: DecisionRow[];
+  profile: ProfileRow | null;
+  error: string | null;
+}> {
   try {
     const supabase = await createSupabaseServerClient();
-    const decisions = await listDecisionsForUser(supabase, { limit: STATS_LIMIT });
-    return { decisions, error: null };
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // The (dashboard) layout already redirects to /login when unauthenticated.
+    if (!user) return { decisions: [], profile: null, error: null };
+
+    const [decisions, profile] = await Promise.all([
+      listDecisionsForUser(supabase, { limit: STATS_LIMIT }),
+      getOrCreateProfile(supabase, user.id),
+    ]);
+    return { decisions, profile, error: null };
   } catch (error) {
     unstable_rethrow(error);
-    console.error("Failed to load recent decisions for the dashboard.", error);
-    return { decisions: [], error: error instanceof Error ? error.message : "Unknown error" };
+    console.error("Failed to load dashboard data.", error);
+    return { decisions: [], profile: null, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
 export default async function DashboardPage() {
-  const { decisions, error } = await loadDecisions();
+  const { decisions, profile, error } = await loadDashboardData();
 
   if (error) {
-    return <ConfigErrorNotice title="Kunde inte ladda dina beslut" />;
+    return <ConfigErrorNotice title="Kunde inte ladda din översikt" />;
   }
 
   if (decisions.length === 0) {
     return <EmptyDashboard />;
   }
 
-  const stats = computeDashboardStats(decisions);
+  const trend = computeSavingsTrend(decisions);
   const recentDecisions = decisions.slice(0, RECENT_LIMIT);
+
+  const isActive = profile?.subscription_status === "active";
+  const usageLimit = isActive ? UPGRADE_PLAN.monthlyAnalysisLimit : 5;
+  const usageUsed = profile ? (isActive ? currentMonthlyUsage(profile) : 5 - profile.trial_credits) : 0;
+  const usagePercent = Math.min(100, Math.round((usageUsed / usageLimit) * 100));
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
-          label="Total besparing"
+          label="Analyser denna månad"
+          value={`${usageUsed}/${usageLimit}`}
+          subtext={isActive ? `${daysLeftInMonthlyPeriod()} dagar kvar av perioden` : "Testperiod"}
+          tooltip={
+            isActive
+              ? "Nollställs i början av varje kalendermånad."
+              : "Ingår i din gratis testperiod — uppgradera till Pro för 50 analyser/månad."
+          }
+        >
+          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div className="h-full rounded-full bg-blue-500" style={{ width: `${usagePercent}%` }} />
+          </div>
+        </StatCard>
+
+        <StatCard
+          label="Sparade pengar"
           value={
-            stats.totalSaved != null && stats.totalSavedCurrency
-              ? formatCurrency(stats.totalSaved, stats.totalSavedCurrency)
+            trend.currentPeriod.total != null && trend.currentPeriod.currency
+              ? formatCurrency(trend.currentPeriod.total, trend.currentPeriod.currency)
               : "—"
           }
-          subtext="Sedan start"
+          subtext="Senaste 30 dagar"
+          tooltip="Summan av positiv nettobesparing (ROI) från analyser i den valuta som förekommer oftast."
+          trend={
+            trend.trendPercentage != null
+              ? {
+                  label: `${trend.trendPercentage > 0 ? "+" : ""}${formatPercentage(trend.trendPercentage, 1)}`,
+                  positive: trend.trendPercentage >= 0,
+                }
+              : undefined
+          }
         />
+
         <StatCard
-          label="Genomsnittlig ROI"
-          value={stats.avgRoiPercentage != null ? `${stats.avgRoiPercentage.toFixed(1)}%` : "—"}
-          valueClassName={stats.avgRoiPercentage != null && stats.avgRoiPercentage > 0 ? "text-green-500" : undefined}
+          label="Aktiv prenumeration"
+          value={isActive ? "Pro" : "Trial"}
+          valueClassName={isActive ? "text-blue-500" : undefined}
+          subtext={isActive ? "990 kr/månad" : `${profile?.trial_credits ?? 0} gratisanalyser kvar`}
+          tooltip="Se full fakturering, betalningsmetod och fakturor under Fakturering."
         />
-        <StatCard label="Antal beslut" value={String(stats.decisionsLast30Days)} subtext="Senaste 30 dagar" />
       </div>
 
       <div className="space-y-3">

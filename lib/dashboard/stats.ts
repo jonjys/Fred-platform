@@ -28,6 +28,7 @@ interface RoiEntry {
   roiPercentage: number;
   netBenefit: number;
   currency: string;
+  createdAt: Date;
 }
 
 /** Sums `netBenefit` across entries sharing the most common currency in the
@@ -46,6 +47,28 @@ function sumByMajorityCurrency(entries: RoiEntry[]): { total: number | null; cur
   return { total, currency: total != null ? primaryCurrency : null };
 }
 
+/** Shared extraction — every ROI-aware stat (all-time totals, 30-day trend)
+ * starts from this same set of purchase-analysis decisions that actually
+ * have a computed ROI. */
+function extractRoiEntries(decisions: DecisionRow[]): RoiEntry[] {
+  return decisions
+    .filter((decision) => decision.module_key === "purchase-analysis")
+    .map((decision) => ({
+      primary: (decision.deterministic_metrics as PurchaseAnalysisMetrics | null)?.primary,
+      createdAt: new Date(decision.created_at),
+    }))
+    .filter(
+      (entry): entry is { primary: PurchaseAnalysisMetrics["primary"]; createdAt: Date } =>
+        entry.primary != null && entry.primary.roi != null,
+    )
+    .map((entry) => ({
+      roiPercentage: entry.primary.roi!.roiPercentage,
+      netBenefit: entry.primary.roi!.netBenefit,
+      currency: entry.primary.tco.currency,
+      createdAt: entry.createdAt,
+    }));
+}
+
 /**
  * Pure, module-scoped aggregation for the dashboard's stat tiles. Reads
  * only from data every purchase-analysis decision already has
@@ -58,15 +81,7 @@ export function computeDashboardStats(decisions: DecisionRow[], now: Date = new 
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const decisionsLast30Days = decisions.filter((decision) => new Date(decision.created_at) >= thirtyDaysAgo).length;
 
-  const roiEntries: RoiEntry[] = decisions
-    .filter((decision) => decision.module_key === "purchase-analysis")
-    .map((decision) => (decision.deterministic_metrics as PurchaseAnalysisMetrics | null)?.primary)
-    .filter((primary): primary is PurchaseAnalysisMetrics["primary"] => primary != null && primary.roi != null)
-    .map((primary) => ({
-      roiPercentage: primary.roi!.roiPercentage,
-      netBenefit: primary.roi!.netBenefit,
-      currency: primary.tco.currency,
-    }));
+  const roiEntries = extractRoiEntries(decisions);
 
   if (roiEntries.length === 0) {
     return {
@@ -93,4 +108,48 @@ export function computeDashboardStats(decisions: DecisionRow[], now: Date = new 
     totalSaved,
     totalSavedCurrency,
   };
+}
+
+export interface SavingsTrend {
+  currentPeriod: { total: number | null; currency: string | null };
+  previousPeriod: { total: number | null; currency: string | null };
+  /** (current - previous) / previous * 100. Null whenever the two periods
+   * aren't comparable: no previous-period data, a previous total of zero
+   * (division by zero), or a different majority currency between the two
+   * windows — a percentage change across currencies isn't a real number. */
+  trendPercentage: number | null;
+}
+
+/**
+ * The dashboard's "Sparade pengar" card wants a 30-day figure with a trend
+ * against the prior 30 days, not the "since start" total `totalSaved`
+ * already shows elsewhere — this is a separate computation rather than a
+ * breaking change to computeDashboardStats' existing contract.
+ */
+export function computeSavingsTrend(decisions: DecisionRow[], now: Date = new Date()): SavingsTrend {
+  const periodMs = 30 * 24 * 60 * 60 * 1000;
+  const currentPeriodStart = new Date(now.getTime() - periodMs);
+  const previousPeriodStart = new Date(now.getTime() - 2 * periodMs);
+
+  const roiEntries = extractRoiEntries(decisions).filter((entry) => entry.netBenefit > 0);
+
+  const currentEntries = roiEntries.filter((entry) => entry.createdAt >= currentPeriodStart && entry.createdAt <= now);
+  const previousEntries = roiEntries.filter(
+    (entry) => entry.createdAt >= previousPeriodStart && entry.createdAt < currentPeriodStart,
+  );
+
+  const currentPeriod = sumByMajorityCurrency(currentEntries);
+  const previousPeriod = sumByMajorityCurrency(previousEntries);
+
+  let trendPercentage: number | null = null;
+  if (
+    currentPeriod.total != null &&
+    previousPeriod.total != null &&
+    previousPeriod.total !== 0 &&
+    currentPeriod.currency === previousPeriod.currency
+  ) {
+    trendPercentage = ((currentPeriod.total - previousPeriod.total) / previousPeriod.total) * 100;
+  }
+
+  return { currentPeriod, previousPeriod, trendPercentage };
 }
