@@ -28,8 +28,9 @@ export async function POST(request: Request) {
       locale: "sv",
     });
     return NextResponse.json({ url: session.url });
-  } catch (e: any) {
-    if (e.code === 'resource_missing') {
+    } catch (e: unknown) {
+    const err = e as { code?: string; message?: string };
+    if (err.code === 'resource_missing') {
       const admin = createSupabaseServiceRoleClient();
       await admin.from("profiles").update({ subscription_status: "canceled", stripe_customer_id: null }).eq("user_id", user.id);
       return NextResponse.json({ error: "Customer deleted in Stripe, reset to trial", reset: true }, { status: 400 });
