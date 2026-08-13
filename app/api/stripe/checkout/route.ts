@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       : { customer_email: user.email ?? undefined }),
     success_url: `${origin}/settings/billing?success=1`,
     cancel_url: `${origin}/settings/billing?canceled=1`,
+    locale: "sv",
   });
 
   if (!session.url) {

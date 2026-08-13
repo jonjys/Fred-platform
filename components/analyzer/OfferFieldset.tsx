@@ -54,27 +54,27 @@ export function OfferFieldset({
         {onRemove && (
           <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
             <X className="mr-1 h-3.5 w-3.5" />
-            Remove
+            Ta bort
           </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-vendorName`}>Vendor name</Label>
+          <Label htmlFor={`${idPrefix}-vendorName`}>Leverantör</Label>
           <Input
             id={`${idPrefix}-vendorName`}
             required={required}
             value={value.vendorName}
             onChange={(event) => set("vendorName", event.target.value)}
-            placeholder="Acme SaaS Inc."
+            placeholder="Leverantör AB"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor={`${idPrefix}-upfrontCost`}>Upfront cost</Label>
-              <FieldHint text="A one-time cost billed once (setup, onboarding, first-year license) — not repeated in later years." />
+              <Label htmlFor={`${idPrefix}-upfrontCost`}>Engångskostnad</Label>
+              <FieldHint text="En engångskostnad som betalas en gång (uppstart, onboarding, första årets licens) — återkommer inte senare år." />
             </div>
             <Input
               id={`${idPrefix}-upfrontCost`}
@@ -85,12 +85,13 @@ export function OfferFieldset({
               value={value.upfrontCost}
               onChange={(event) => set("upfrontCost", event.target.value)}
               placeholder="0"
+              className="font-mono"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor={`${idPrefix}-monthlyCost`}>Monthly cost</Label>
-              <FieldHint text="The recurring subscription cost — this is what drives the 1yr/3yr TCO projection." />
+              <Label htmlFor={`${idPrefix}-monthlyCost`}>Månadskostnad</Label>
+              <FieldHint text="Den återkommande prenumerationskostnaden — det här styr TCO-prognosen över 1/3 år." />
             </div>
             <Input
               id={`${idPrefix}-monthlyCost`}
@@ -101,12 +102,13 @@ export function OfferFieldset({
               value={value.monthlyCost}
               onChange={(event) => set("monthlyCost", event.target.value)}
               placeholder="0"
+              className="font-mono"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor={`${idPrefix}-hiddenFees`}>Hidden / setup fees</Label>
-              <FieldHint text="Extra one-off costs not in the headline price — mandatory add-ons, integration, or onboarding fees the vendor doesn't lead with." />
+              <Label htmlFor={`${idPrefix}-hiddenFees`}>Dolda avgifter / uppstartsavgift</Label>
+              <FieldHint text="Extra engångskostnader som inte finns i huvudpriset — obligatoriska tillägg, integration eller onboarding-avgifter leverantören inte nämner först." />
             </div>
             <Input
               id={`${idPrefix}-hiddenFees`}
@@ -116,12 +118,13 @@ export function OfferFieldset({
               value={value.hiddenFees}
               onChange={(event) => set("hiddenFees", event.target.value)}
               placeholder="0"
+              className="font-mono"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor={`${idPrefix}-contractLengthMonths`}>Contract length (months)</Label>
-              <FieldHint text="The initial committed term. Informational only — the TCO projection assumes the subscription renews rather than stopping at the end of this term (0 = month-to-month)." />
+              <Label htmlFor={`${idPrefix}-contractLengthMonths`}>Avtalslängd (månader)</Label>
+              <FieldHint text="Den ursprungliga bindningstiden. Enbart informativt — TCO-prognosen antar att prenumerationen förnyas istället för att upphöra vid bindningstidens slut (0 = ingen bindningstid)." />
             </div>
             <Input
               id={`${idPrefix}-contractLengthMonths`}
@@ -130,19 +133,20 @@ export function OfferFieldset({
               step="1"
               value={value.contractLengthMonths}
               onChange={(event) => set("contractLengthMonths", event.target.value)}
-              placeholder="0 = month-to-month"
+              placeholder="0 = ingen bindningstid"
+              className="font-mono"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-notes`}>Notes (optional)</Label>
+          <Label htmlFor={`${idPrefix}-notes`}>Anteckningar (valfritt)</Label>
           <Textarea
             id={`${idPrefix}-notes`}
             rows={2}
             value={value.notes}
             onChange={(event) => set("notes", event.target.value)}
-            placeholder="Anything relevant Claude should know about this offer"
+            placeholder="Allt relevant Claude bör känna till om den här offerten"
           />
         </div>
       </CardContent>

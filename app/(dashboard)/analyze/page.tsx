@@ -29,33 +29,22 @@ export default async function AnalyzePage() {
   const { companies, error } = await loadCompanies();
 
   if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Analyze</h1>
-        <ConfigErrorNotice title="Couldn't load your companies" />
-      </div>
-    );
+    return <ConfigErrorNotice title="Kunde inte ladda dina företag" />;
   }
 
   if (companies.length === 0) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Analyze</h1>
-          <p className="text-muted-foreground">One more step before your first analysis.</p>
-        </div>
+      <div className="space-y-6">
+        <p className="text-sm text-zinc-400">Ett steg kvar innan din första analys.</p>
         <CreateCompanyForm />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Analyze</h1>
-        <p className="text-muted-foreground">Should you BUY, NEGOTIATE, or REJECT?</p>
-      </div>
-      <Suspense fallback={<div className="max-w-2xl animate-pulse text-sm text-muted-foreground">Loading…</div>}>
+    <div className="space-y-6">
+      <p className="text-sm text-zinc-400">Vad ska FRED analysera åt dig?</p>
+      <Suspense fallback={<div className="max-w-2xl animate-pulse text-sm text-zinc-500">Laddar…</div>}>
         <AnalyzeModulePicker
           companies={companies.map((company) => ({ id: company.id, companyName: company.company_name }))}
         />

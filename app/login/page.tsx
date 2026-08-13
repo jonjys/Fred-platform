@@ -1,9 +1,9 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/database/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -35,28 +35,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4 dark:from-slate-950 dark:to-slate-900">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+      <div className="w-full max-w-[360px]">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">FRED</h1>
-          <p className="mt-2 text-muted-foreground">Stop guessing. Start deciding.</p>
-          <p className="text-sm text-muted-foreground">Save €50k+ per year on bad business decisions.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">FRED</h1>
+          <p className="mt-2 text-sm text-zinc-400">Stoppa gissningarna. Börja besluta.</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign in</CardTitle>
-            <CardDescription>Sign in with a magic link — no password required.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {status === "sent" ? (
-              <p className="text-sm text-muted-foreground">
-                Check <span className="font-medium text-foreground">{email}</span> for a sign-in link.
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
+          {status === "sent" ? (
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-semibold text-zinc-50">Kolla din inkorg</h2>
+              <p className="text-sm text-zinc-400">
+                Vi har skickat en inloggningslänk till <span className="font-medium text-zinc-50">{email}</span>.
               </p>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-semibold text-zinc-50">Logga in</h2>
+                <p className="text-sm text-zinc-400">Logga in med magic link. Inget lösenord behövs.</p>
+              </div>
+              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-post</Label>
                   <Input
                     id="email"
                     type="email"
@@ -64,20 +66,28 @@ export default function LoginPage() {
                     autoFocus
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="du@foretag.se"
+                    className="text-base"
                   />
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={status === "sending"}>
-                  {status === "sending" ? "Sending link…" : "Send magic link"}
+                  {status === "sending" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Skickar…
+                    </>
+                  ) : (
+                    "Skicka magisk länk"
+                  )}
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
-                  By signing in you agree to our Terms. 14 days free trial.
+                <p className="text-center text-xs text-zinc-500">
+                  Genom att logga in godkänner du våra villkor. 14 dagar gratis.
                 </p>
               </form>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ export function UpgradeButton() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Starting checkout…
+            Startar…
           </>
         ) : (
           "Uppgradera – 499 kr/mån (50 analyser)"

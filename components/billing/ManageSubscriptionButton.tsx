@@ -9,7 +9,7 @@ export function ManageSubscriptionButton() {
 
   return (
     <div className="space-y-2">
-      <Button onClick={trigger} disabled={isLoading} variant="outline">
+      <Button onClick={trigger} disabled={isLoading} variant="secondary">
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -19,7 +19,7 @@ export function ManageSubscriptionButton() {
           "Hantera prenumeration"
         )}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 }

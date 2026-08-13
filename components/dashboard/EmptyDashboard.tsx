@@ -16,8 +16,8 @@ function ExampleCard({ title, desc, template, disabled }: ExampleCardProps) {
     <Card
       className={
         disabled
-          ? "h-full cursor-not-allowed opacity-60"
-          : "h-full transition-colors hover:bg-secondary/40"
+          ? "h-full cursor-not-allowed border-zinc-800 bg-zinc-900 opacity-60"
+          : "h-full border-zinc-800 bg-zinc-900 transition-colors hover:bg-zinc-800"
       }
     >
       <CardHeader className="space-y-1.5 p-4 sm:p-6">
@@ -38,16 +38,16 @@ function ExampleCard({ title, desc, template, disabled }: ExampleCardProps) {
 export function EmptyDashboard() {
   return (
     <div className="py-20 text-center">
-      <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight">Make your first decision</h2>
-      <p className="mt-2 text-muted-foreground">FRED analyzes costs, risks and ROI in 30 seconds.</p>
+      <Sparkles className="mx-auto h-12 w-12 text-zinc-700" />
+      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-50">Inga beslut ännu</h2>
+      <p className="mt-2 text-zinc-400">FRED analyserar kostnad, risk och ROI på 30 sekunder.</p>
       <div className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
-        <ExampleCard title="Renegotiate SaaS" desc="Save 30% on cloud costs" template="saas-purchase" />
-        <ExampleCard title="Compare suppliers" desc="Find hidden fees" template="compare-suppliers" />
-        <ExampleCard title="Refinance loan" desc="Coming soon" disabled />
+        <ExampleCard title="Omförhandla SaaS" desc="Spara 30% på molnkostnader" template="saas-purchase" />
+        <ExampleCard title="Jämför leverantörer" desc="Hitta dolda avgifter" template="compare-suppliers" />
+        <ExampleCard title="Refinansiera lån" desc="Kommer snart" disabled />
       </div>
       <Button asChild size="lg" className="mt-8">
-        <Link href="/analyze">Start new analysis</Link>
+        <Link href="/analyze">Skapa analys</Link>
       </Button>
     </div>
   );

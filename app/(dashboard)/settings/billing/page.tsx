@@ -1,7 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
 import { UpgradeButton } from "@/components/billing/UpgradeButton";
@@ -9,6 +8,7 @@ import { UPGRADE_PLAN } from "@/lib/billing/plan";
 import { currentMonthlyUsage } from "@/lib/billing/usage";
 import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { cn } from "@/lib/utils";
 
 async function loadProfile(): Promise<{ profile: ProfileRow | null; error: string | null }> {
   try {
@@ -37,62 +37,72 @@ export default async function BillingPage({
   const [{ profile, error }, params] = await Promise.all([loadProfile(), searchParams]);
 
   if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Billing</h1>
-        <ConfigErrorNotice title="Couldn't load your billing status" />
-      </div>
-    );
+    return <ConfigErrorNotice title="Kunde inte ladda din fakturering" />;
   }
 
   if (!profile) return null;
 
   const isActive = profile.subscription_status === "active";
+  const used = currentMonthlyUsage(profile);
+  const usagePercent = Math.min(100, Math.round((used / UPGRADE_PLAN.monthlyAnalysisLimit) * 100));
 
   return (
-    <div className="max-w-lg space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Billing</h1>
-        <p className="text-muted-foreground">Manage your plan and usage.</p>
-      </div>
+    <div className="max-w-lg space-y-6">
+      <p className="text-sm text-zinc-400">Hantera din prenumeration.</p>
 
       {params.success === "1" && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+        <div className="flex items-center gap-2 rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-500">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Subscription activated — thank you!
+          Prenumerationen är aktiverad — tack!
         </div>
       )}
       {params.canceled === "1" && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-400">
           <XCircle className="h-4 w-4 shrink-0" />
-          Checkout was canceled — no changes were made.
+          Kassan avbröts — inga ändringar gjordes.
         </div>
       )}
 
-      <Card>
-        <CardHeader>
+      <Card className="border-zinc-800 bg-zinc-900">
+        <div className="space-y-4 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <CardTitle>Current plan</CardTitle>
-            <Badge variant={isActive ? "default" : "secondary"}>
+            <h2 className="text-base font-semibold text-zinc-50">Nuvarande plan</h2>
+            <span
+              className={cn(
+                "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
+                isActive ? "bg-blue-500/10 text-blue-500" : "bg-zinc-800 text-zinc-400",
+              )}
+            >
               {isActive ? "Pro" : "Trial"}
-            </Badge>
+            </span>
           </div>
-          <CardDescription>
-            {isActive
-              ? `${currentMonthlyUsage(profile)} / ${UPGRADE_PLAN.monthlyAnalysisLimit} analyses used this month.`
-              : `${profile.trial_credits} trial ${profile.trial_credits === 1 ? "analysis" : "analyses"} remaining.`}
-          </CardDescription>
-        </CardHeader>
-        {(!isActive || profile.stripe_customer_id) && (
-          <CardContent className="flex flex-wrap gap-3">
-            {!isActive && <UpgradeButton />}
-            {/* Only a customer who's been through checkout at least once has
-             * a Stripe customer id — the portal needs one to open. Shown
-             * regardless of current status so a canceled subscriber can
-             * still reach their invoice history. */}
-            {profile.stripe_customer_id && <ManageSubscriptionButton />}
-          </CardContent>
-        )}
+
+          {isActive ? (
+            <div className="space-y-2">
+              <p className="text-sm text-zinc-400">
+                {used} av {UPGRADE_PLAN.monthlyAnalysisLimit} analyser använda denna månad
+              </p>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-full rounded-full bg-blue-500" style={{ width: `${usagePercent}%` }} />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-400">
+              {profile.trial_credits} {profile.trial_credits === 1 ? "gratisanalys" : "gratisanalyser"} kvar.
+            </p>
+          )}
+
+          {(!isActive || profile.stripe_customer_id) && (
+            <div className="flex flex-wrap gap-3">
+              {!isActive && <UpgradeButton />}
+              {/* Only a customer who's been through checkout at least once has
+               * a Stripe customer id — the portal needs one to open. Shown
+               * regardless of current status so a canceled subscriber can
+               * still reach their invoice history. */}
+              {profile.stripe_customer_id && <ManageSubscriptionButton />}
+            </div>
+          )}
+        </div>
       </Card>
     </div>
   );

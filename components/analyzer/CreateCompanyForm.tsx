@@ -16,8 +16,8 @@ import { Label } from "@/components/ui/label";
 export function CreateCompanyForm() {
   const router = useRouter();
   const [companyName, setCompanyName] = useState("");
-  const [currency, setCurrency] = useState("EUR");
-  const [vatRate, setVatRate] = useState("21");
+  const [currency, setCurrency] = useState("SEK");
+  const [vatRate, setVatRate] = useState("25");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +37,8 @@ export function CreateCompanyForm() {
     });
 
     if (!response.ok) {
-      const body = await response.json().catch(() => ({ error: "Failed to create company" }));
-      setError(body.error ?? "Failed to create company");
+      const body = await response.json().catch(() => ({ error: "Kunde inte skapa företaget" }));
+      setError(body.error ?? "Kunde inte skapa företaget");
       setIsSubmitting(false);
       return;
     }
@@ -47,40 +47,41 @@ export function CreateCompanyForm() {
   }
 
   return (
-    <Card className="max-w-md">
+    <Card className="max-w-md border-zinc-800 bg-zinc-900">
       <CardHeader>
-        <CardTitle>Set up your AI Wallet</CardTitle>
+        <CardTitle>Skapa din företagsprofil</CardTitle>
         <CardDescription>
-          A company profile is required before running an analysis — it carries your currency, VAT rate, and budget
-          into every decision.
+          En företagsprofil krävs innan du kan köra en analys — den bär med sig din valuta, momssats och budget in i
+          varje beslut.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="companyName">Company name</Label>
+            <Label htmlFor="companyName">Företagsnamn</Label>
             <Input
               id="companyName"
               required
               value={companyName}
               onChange={(event) => setCompanyName(event.target.value)}
-              placeholder="Acme Inc."
+              placeholder="Mitt AB"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="currency">Currency</Label>
+              <Label htmlFor="currency">Valuta</Label>
               <Input
                 id="currency"
                 required
                 maxLength={3}
                 value={currency}
                 onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-                placeholder="EUR"
+                placeholder="SEK"
+                className="font-mono"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vatRate">VAT rate (%)</Label>
+              <Label htmlFor="vatRate">Momssats (%)</Label>
               <Input
                 id="vatRate"
                 type="number"
@@ -89,12 +90,13 @@ export function CreateCompanyForm() {
                 step="0.1"
                 value={vatRate}
                 onChange={(event) => setVatRate(event.target.value)}
+                className="font-mono"
               />
             </div>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Creating…" : "Create company"}
+            {isSubmitting ? "Skapar…" : "Skapa företag"}
           </Button>
         </form>
       </CardContent>
