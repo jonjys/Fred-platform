@@ -2,6 +2,8 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { DesktopSidebar, Topbar } from "@/components/dashboard/Sidebar";
+import { TrialOnboarding } from "@/components/onboarding/TrialOnboarding";
+import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import type { User } from "@supabase/supabase-js";
 
@@ -21,6 +23,20 @@ async function getUserSafely(): Promise<{ user: User | null; configError: string
     unstable_rethrow(error);
     console.error("Failed to resolve the signed-in user in the dashboard layout.", error);
     return { user: null, configError: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+/** Best-effort — a profile-fetch hiccup should never block rendering the
+ * whole dashboard, it just means the onboarding modal doesn't show this
+ * load (it'll show next time, once the profile loads fine). */
+async function getProfileSafely(userId: string): Promise<ProfileRow | null> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    return await getOrCreateProfile(supabase, userId);
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to load profile for trial onboarding.", error);
+    return null;
   }
 }
 
@@ -47,12 +63,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   const email = user.email ?? "";
+  const profile = await getProfileSafely(user.id);
+  const showOnboarding = profile?.subscription_status === "trial" && profile.trial_credits === 5;
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <DesktopSidebar email={email} />
       <div className="lg:pl-60">
         <Topbar email={email} />
+        {showOnboarding && profile && <TrialOnboarding userId={user.id} trialCredits={profile.trial_credits} />}
         <main className="mx-auto max-w-[1200px] px-4 py-4 lg:px-6 lg:py-6">{children}</main>
       </div>
     </div>
