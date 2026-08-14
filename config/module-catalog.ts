@@ -40,9 +40,13 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
     enabled: true,
   },
   {
-    // Kommer från debt-optimizer-standalone när P0-buggar är gröna.
-    // Flip `enabled` to true (and wire the real engine into config/tools.ts)
-    // once that repo reports all 5 P0 bugs fixed.
+    // Portad från debt-optimizer-standalone (45/45 tester gröna där, P0-buggar
+    // fixade). Motorn finns nu på riktigt i lib/decision-engine/modules/
+    // debt-optimization och svarar på /api/debt/analyze (en egen route,
+    // inte via DECISION_MODULES — se den routens kommentar för varför).
+    // `enabled` hålls ändå false med flit: BLOCKERS.md har en explicit,
+    // tidigare satt spärr ("Sätt inte enabled: true. Jag säger till när.").
+    // Flippa den bara på uttrycklig order.
     key: "debt-optimization",
     label: "Skuldoptimering",
     description: "Ska du refinansiera, konsolidera eller lösa lånet? (Kommer snart)",
