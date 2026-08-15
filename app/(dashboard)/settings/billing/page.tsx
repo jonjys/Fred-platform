@@ -1,155 +1,206 @@
-import { unstable_rethrow } from "next/navigation";
-import { CheckCircle2, XCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
-import { InvoiceTable } from "@/components/billing/InvoiceTable";
-import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
-import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
-import { UpgradeButton } from "@/components/billing/UpgradeButton";
-import { UPGRADE_PLAN } from "@/lib/billing/plan";
-import { getBillingDetails, type BillingDetails } from "@/lib/billing/stripeDetails";
-import { currentMonthlyUsage } from "@/lib/billing/usage";
-import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
-import { cn } from "@/lib/utils";
+'use client';
 
-async function loadProfile(): Promise<{ profile: ProfileRow | null; error: string | null }> {
-  try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+import { useEffect, useState } from 'react';
+import { CreditCard, Download, AlertTriangle, CheckCircle2, Zap, XCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
-    // The (dashboard) layout already redirects to /login when unauthenticated.
-    if (!user) return { profile: null, error: null };
+type BillingData = {
+  isActive: boolean;
+  used: number;
+  limit: number;
+  daysLeft: number | null;
+  stripeCustomerId: string | null;
+  paymentMethod: any;
+  invoices: any[];
+  trialCredits: number;
+};
 
-    const profile = await getOrCreateProfile(supabase, user.id);
-    return { profile, error: null };
-  } catch (error) {
-    unstable_rethrow(error);
-    console.error("Failed to load billing profile.", error);
-    return { profile: null, error: error instanceof Error ? error.message : "Unknown error" };
-  }
-}
+export default function BillingPage() {
+  const [data, setData] = useState<BillingData | null>(null);
+  const searchParams = useSearchParams();
+  const success = searchParams.get('success');
+  const canceled = searchParams.get('canceled');
 
-/** Best-effort: a Stripe hiccup here shouldn't take down the whole page —
- * the plan/usage card (backed by our own DB) still renders fine either way,
- * just without the payment-method/invoice panel. */
-async function loadBillingDetails(stripeCustomerId: string | null): Promise<BillingDetails | null> {
-  if (!stripeCustomerId) return null;
-  try {
-    return await getBillingDetails(stripeCustomerId);
-  } catch (error) {
-    console.error("Failed to load Stripe billing details.", error);
-    return null;
-  }
-}
+  useEffect(() => {
+    fetch('/api/billing')
+      .then(res => res.json())
+      .then(setData);
+  }, []);
 
-export default async function BillingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ success?: string; canceled?: string }>;
-}) {
-  const [{ profile, error }, params] = await Promise.all([loadProfile(), searchParams]);
+  if (!data) return <div className="min-h-screen bg-[#0a0a0b] text-white p-6">Laddar...</div>;
 
-  if (error) {
-    return <ConfigErrorNotice title="Kunde inte ladda din fakturering" />;
-  }
-
-  if (!profile) return null;
-
-  const billingDetails = await loadBillingDetails(profile.stripe_customer_id);
-
-  const isActive = profile.subscription_status === "active";
-  const used = currentMonthlyUsage(profile);
-  const usagePercent = Math.min(100, Math.round((used / UPGRADE_PLAN.monthlyAnalysisLimit) * 100));
-  const daysLeft = billingDetails?.subscription
-    ? Math.max(
-        0,
-        Math.ceil((new Date(billingDetails.subscription.currentPeriodEnd).getTime() - Date.now()) / 86_400_000),
-      )
-    : null;
+  const usagePercent = Math.min(100, Math.round((data.used / data.limit) * 100));
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <p className="text-sm text-zinc-400">Hantera din prenumeration.</p>
-
-      {params.success === "1" && (
-        <div className="flex items-center gap-2 rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-500">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Prenumerationen är aktiverad — tack!
+    <div className="min-h-screen bg-[#0a0a0b] text-white">
+      <div className="mx-auto max-w-6xl p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Billing & Prenumeration</h1>
+          <p className="text-gray-400">Hantera din prenumeration, betalningsmetod och fakturor.</p>
         </div>
-      )}
-      {params.canceled === "1" && (
-        <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-400">
-          <XCircle className="h-4 w-4 shrink-0" />
-          Kassan avbröts — inga ändringar gjordes.
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-zinc-900">
-          <div className="space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-zinc-50">Nuvarande plan</h2>
-              <span
-                className={cn(
-                  "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
-                  isActive ? "bg-blue-500/10 text-blue-500" : "bg-zinc-800 text-zinc-400",
-                )}
-              >
-                {isActive ? "Pro" : "Trial"}
-              </span>
-            </div>
-
-            {isActive ? (
-              <div className="space-y-2">
-                <p className="font-mono text-sm text-zinc-50">FRED Pro — 990 kr per månad</p>
-                <p className="text-sm text-zinc-400">
-                  {used} av {UPGRADE_PLAN.monthlyAnalysisLimit} analyser använda denna månad
-                </p>
-                <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div className="h-full rounded-full bg-blue-500" style={{ width: `${usagePercent}%` }} />
-                </div>
-                {daysLeft != null && (
-                  <p className="text-xs text-zinc-500">
-                    {daysLeft} {daysLeft === 1 ? "dag" : "dagar"} kvar av perioden
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-zinc-400">
-                {profile.trial_credits} {profile.trial_credits === 1 ? "gratisanalys" : "gratisanalyser"} kvar.
-              </p>
-            )}
-
-            {(!isActive || profile.stripe_customer_id) && (
-              <div className="flex flex-wrap gap-3">
-                {!isActive && <UpgradeButton />}
-                {/* Only a customer who's been through checkout at least once has
-                 * a Stripe customer id — the portal needs one to open. Shown
-                 * regardless of current status so a canceled subscriber can
-                 * still reach their invoice history. */}
-                {profile.stripe_customer_id && <ManageSubscriptionButton />}
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {profile.stripe_customer_id && (
-          <div className="space-y-4">
-            <PaymentMethodCard
-              paymentMethod={billingDetails?.paymentMethod ?? null}
-              subscription={billingDetails?.subscription ?? null}
-            />
-            <Card className="border-zinc-800 bg-zinc-900">
-              <div className="space-y-3 p-4 sm:p-6">
-                <h2 className="text-base font-semibold text-zinc-50">Fakturor</h2>
-                <InvoiceTable invoices={billingDetails?.invoices ?? []} />
-              </div>
-            </Card>
+        {success === '1' && (
+          <div className="flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-400 mb-6">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            Prenumerationen är aktiverad — tack!
           </div>
         )}
+        {canceled === '1' && (
+          <div className="flex items-center gap-2 rounded-xl border border-gray-800 bg-[#141416] p-4 text-sm text-gray-400 mb-6">
+            <XCircle className="h-5 w-5 shrink-0" />
+            Kassan avbröts — inga ändringar gjordes.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <div className="bg-[#141416] border border-gray-800 rounded-xl p-6">
+              <div className="text-sm text-gray-400 mb-3">Nuvarande plan</div>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-2xl font-bold">{data.isActive ? 'Pro' : 'Trial'}</h2>
+                {data.isActive && (
+                  <div className="bg-[#7c3aed] px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    Pro
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <div className="text-3xl font-bold mb-1">{data.used}/{data.limit} analyser</div>
+                <div className="text-sm text-gray-400">{data.daysLeft ? `${data.daysLeft} dagar kvar` : `${data.trialCredits} gratisanalyser kvar`}</div>
+              </div>
+
+              {data.isActive && (
+                <div className="mb-6">
+                  <div className="text-sm text-gray-400 mb-2">Användning denna månad</div>
+                  <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
+                    <div className="bg-[#7c3aed] h-2 rounded-full" style={{ width: `${usagePercent}%` }}></div>
+                  </div>
+                  <div className="text-xs text-gray-500">{data.used} använda av {data.limit} analyser</div>
+                </div>
+              )}
+
+              <div className="space-y-3 mb-6">
+                <div className="text-sm font-semibold mb-3">Ingår i Pro</div>
+                {[
+                  'Realtidsanalys',
+                  'Obegränsade integrationer', 
+                  'Prioriterad support',
+                  'Avancerade rapporter'
+                ].map((feature) => (
+                  <div key={feature} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-[#7c3aed]" />
+                    <span className="text-gray-300">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              {!data.isActive && (
+                <button 
+                  onClick={() => window.location.href = '/api/stripe/checkout'}
+                  className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-semibold py-3 rounded-lg transition-colors mb-2"
+                >
+                  Uppgradera plan
+                </button>
+              )}
+              {data.stripeCustomerId && (
+                <button 
+                  onClick={() => window.location.href = '/api/stripe/portal'}
+                  className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg transition-colors text-sm"
+                >
+                  Hantera prenumeration
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 space-y-6">
+            {data.paymentMethod && (
+              <div className="bg-[#141416] border border-gray-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Betalningsmetod</h3>
+                  <span className="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400">Standard</span>
+                </div>
+                
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="bg-white px-3 py-2 rounded">
+                    <CreditCard className="w-6 h-6 text-[#141416]" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{data.paymentMethod.brand} •••• {data.paymentMethod.last4}</div>
+                    <div className="text-sm text-gray-400">Förfaller {data.paymentMethod.exp_month}/{data.paymentMethod.exp_year}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {data.daysLeft !== null && data.daysLeft < 7 && (
+              <div className="bg-[#2a1a00] border border-[#7c2d12] rounded-xl p-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <AlertTriangle className="w-5 h-5 text-[#f59e0b] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-[#f59e0b] mb-1">
+                      Prenumerationen upphör snart
+                    </div>
+                    <div className="text-sm text-[#fbbf24]">
+                      För att undvika avbrott i tjänsten, förnya din prenumeration.
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.location.href = '/api/stripe/portal'}
+                  className="bg-transparent border border-[#7c2d12] hover:bg-[#7c2d12]/20 text-[#f59e0b] px-6 py-2 rounded-lg transition-colors text-sm font-medium"
+                >
+                  Förnya nu
+                </button>
+              </div>
+            )}
+
+            {data.invoices.length > 0 && (
+              <div className="bg-[#141416] border border-gray-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Fakturor</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-400 border-b border-gray-800">
+                        <th className="pb-3 font-medium">Faktura</th>
+                        <th className="pb-3 font-medium">Datum</th>
+                        <th className="pb-3 font-medium">Belopp</th>
+                        <th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 font-medium text-right">Åtgärder</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.invoices.map((inv: any) => (
+                        <tr key={inv.id} className="border-b border-gray-800/50">
+                          <td className="py-4 text-sm">{inv.number}</td>
+                          <td className="py-4 text-sm text-gray-400">{new Date(inv.created * 1000).toLocaleDateString('sv-SE')}</td>
+                          <td className="py-4 text-sm">{inv.amount_paid / 100} kr</td>
+                          <td className="py-4">
+                            <span className="bg-[#065f46] text-[#6ee7b7] px-3 py-1 rounded-full text-xs font-medium">
+                              Betald
+                            </span>
+                          </td>
+                          <td className="py-4 text-right">
+                            <a href={inv.invoice_pdf} target="_blank" className="text-[#7c3aed] hover:text-[#6d28d9] text-sm font-medium flex items-center gap-1 ml-auto">
+                              Ladda ner <Download className="w-4 h-4" />
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="text-xs text-gray-500 mt-4">Visar {data.invoices.length} fakturor</div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
