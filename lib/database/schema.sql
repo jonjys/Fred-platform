@@ -539,6 +539,26 @@ begin
 end;
 $$;
 
+-- =============================================================================
+-- GRANTS FOR SUPABASE AUTHENTICATED ROLE (FIX)
+-- =============================================================================
+-- Detta är det som saknades och orsakade "permission denied for table profiles/decisions".
+-- I Supabase måste rollen 'authenticated' ha USAGE + table-privilegier, RLS räcker inte.
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+-- Ge full CRUD till alla app-tabeller för inloggade användare (RLS filtrerar raderna)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+-- Anon behöver bara läsa publika tabeller (om du har några), annars kan du ta bort raden nedan
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+
+-- Sequences för id-kolumner
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon;
+
+-- Säkerställ att framtida tabeller också får rättigheter automatiskt
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+
 -- Service-role-only — never meant to be callable directly via the
 -- client-facing REST API. Same two-part revoke as handle_new_user (direct
 -- grant + PUBLIC-level default, both applied by Supabase on creation).
