@@ -20,9 +20,14 @@ export default function LoginPage() {
     setError(null);
 
     const supabase = createSupabaseBrowserClient();
+    
+    // Hårdkoda URL:en så det aldrig blir fel med preview-domäner
     const { error: signInError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { 
+        emailRedirectTo: 'https://fred-platform.vercel.app/auth/callback',
+        shouldCreateUser: true 
+      },
     });
 
     if (signInError) {
@@ -43,7 +48,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-          {status === "sent" ? (
+          {status === "sent"? (
             <div className="space-y-1.5">
               <h2 className="text-lg font-semibold text-zinc-50">Kolla din inkorg</h2>
               <p className="text-sm text-zinc-400">
@@ -72,7 +77,7 @@ export default function LoginPage() {
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={status === "sending"}>
-                  {status === "sending" ? (
+                  {status === "sending"? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Skickar…
