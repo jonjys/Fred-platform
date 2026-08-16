@@ -1,0 +1,4 @@
+﻿import Link from "next/link";
+export default function Core(){
+  return <div><h1 style={{fontSize:"28px", fontWeight:900}}>Oversikt</h1><p style={{opacity:0.6, marginTop:"8px"}}>Valj en app for att borja.</p><div style={{marginTop:"24px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px"}}><Link href="/analyze" style={{background:"#111115", border:"1px solid #1F1F23", borderRadius:"16px", padding:"24px", textDecoration:"none", color:"white"}}><div style={{width:"10px", height:"10px", borderRadius:"999px", background:"#BFFF00"}}></div><div style={{marginTop:"12px", fontWeight:800}}>Inkopsanalys</div><div style={{opacity:0.5, fontSize:"13px"}}>LIVE - KOP, FORHANDLA eller AVSLA</div></Link><div style={{background:"#111115", border:"1px solid #1F1F23", borderRadius:"16px", padding:"24px", opacity:0.4}}><div>Skuldoptimering - SOON</div></div></div></div>
+}
