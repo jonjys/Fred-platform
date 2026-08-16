@@ -1,53 +1,9 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* FRED UI V1.0 — Linear.app standard. Dark theme only, no light theme yet.
- * Zinc-based palette, no gradients, no shadows — 1px zinc-800 borders. */
-@layer base {
-  :root {
-    --background: 240 10% 3.9%; /* zinc-950 #09090B */
-    --foreground: 0 0% 98%; /* zinc-50 #FAFAFA */
-    --card: 240 4% 10%; /* zinc-900 #18181B */
-    --card-foreground: 0 0% 98%;
-    --primary: 217 91% 60%; /* blue-500 #3B82F6 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 16%; /* zinc-800 #27272A */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%; /* zinc-400 #A1A1AA */
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84% 60%; /* red-500 #EF4444 */
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%; /* green-500 #22C55E */
-    --success-foreground: 0 0% 100%;
-    --warning: 45 93% 47%; /* yellow-500 #EAB308 */
-    --warning-foreground: 0 0% 0%;
-    --border: 240 4% 16%; /* zinc-800 */
-    --input: 240 4% 16%;
-    --ring: 217 91% 60%;
-    --radius: 0.5rem;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  html {
-    color-scheme: dark;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  h1 {
-    @apply text-2xl font-semibold tracking-tight;
-  }
-  h2 {
-    @apply text-lg font-semibold;
-  }
-  h3 {
-    @apply text-base font-semibold;
-  }
+body {
+  background: #F6F5F0 !important;
+  color: #111 !important;
+  margin: 0;
 }
