@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 const nav = [
@@ -51,3 +51,4 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
     </div>
   )
 }
+
