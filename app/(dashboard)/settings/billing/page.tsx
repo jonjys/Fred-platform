@@ -1,5 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
-import { CheckCircle2, XCircle, Zap, CreditCard, Download, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Zap, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ConfigErrorNotice } from "@/components/dashboard/ConfigErrorNotice";
 import { InvoiceTable } from "@/components/billing/InvoiceTable";
@@ -11,7 +11,10 @@ import { getBillingDetails, type BillingDetails } from "@/lib/billing/stripeDeta
 import { currentMonthlyUsage } from "@/lib/billing/usage";
 import { getOrCreateProfile, type ProfileRow } from "@/lib/database/repositories/profiles";
 import { createSupabaseServerClient } from "@/lib/database/supabase/server";
-import { cn } from "@/lib/utils";
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+}
 
 async function loadProfile(): Promise<{ profile: ProfileRow | null; error: string | null }> {
   try {
@@ -156,16 +159,19 @@ export default async function BillingPage({
                 subscription={billingDetails?.subscription ?? null}
               />
               
-              {daysLeft !== null && daysLeft < 7 && (
+              {billingDetails?.subscription?.cancelAtPeriodEnd && (
+                // Gated on cancelAtPeriodEnd, not just "daysLeft < 7" — that
+                // condition fired for every normal monthly renewal too,
+                // telling active (non-canceling) Pro customers their
+                // subscription was ending when it wasn't.
                 <div className="bg-[#2a1a00] border border-[#7c2d12] rounded-xl p-6">
                   <div className="flex items-start gap-3 mb-4">
                     <AlertTriangle className="w-5 h-5 text-[#f59e0b] flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-semibold text-[#f59e0b] mb-1">
-                        Prenumerationen upphör snart
-                      </div>
+                      <div className="font-semibold text-[#f59e0b] mb-1">Prenumerationen är uppsagd</div>
                       <div className="text-sm text-[#fbbf24]">
-                        För att undvika avbrott i tjänsten, uppdatera din betalningsmetod.
+                        Din Pro-prenumeration är aktiv till {formatDate(billingDetails.subscription.currentPeriodEnd)}.
+                        Du kan återaktivera den när som helst innan dess via &quot;Hantera prenumeration&quot;.
                       </div>
                     </div>
                   </div>
