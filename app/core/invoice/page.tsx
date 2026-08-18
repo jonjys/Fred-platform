@@ -1,1 +1,77 @@
-﻿import Link from 'next/link'; export default function Page(){return (<div><div style={{display:'flex', justifyContent:'space-between', marginBottom:'24px'}}><div><Link href='/core' style={{fontSize:'12px', color:'#6E6E78'}}>← Back</Link><h1 style={{fontSize:'32px', fontWeight:800, marginTop:'8px'}}>Fred Invoice</h1><p style={{color:'#6E6E78'}}>https://snabbfaktura.vercel.app</p></div><span style={{padding:'6px 12px', borderRadius:'999px', background:'rgba(191,255,0,0.1)', color:'#BFFF00', fontSize:'11px'}}>LIVE • iframe preview</span></div><div style={{borderRadius:'20px', overflow:'hidden', border:'1px solid #1E1E24', height:'75vh', background:'#0E0E12'}}><iframe src='https://snabbfaktura.vercel.app' style={{width:'100%', height:'100%', border:'0'}} /></div></div>);}
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { InvoiceFrame } from "./frame";
+
+const HEADER = (
+  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+    <div>
+      <Link href="/core" style={{ fontSize: "12px", color: "#6E6E78" }}>
+        ← Back
+      </Link>
+      <h1 style={{ fontSize: "32px", fontWeight: 800, marginTop: "8px" }}>Fred Invoice</h1>
+      <p style={{ color: "#6E6E78" }}>Fakturera på 30 sekunder med Swish-länk</p>
+    </div>
+  </div>
+);
+
+export default async function Page() {
+  const baseUrl = process.env.NEXT_PUBLIC_SNABBFAKTURA_URL;
+
+  if (!baseUrl) {
+    return (
+      <div>
+        {HEADER}
+        <div
+          style={{
+            gridColumn: "span 6",
+            padding: "22px",
+            borderRadius: "18px",
+            border: "1px dashed #2A2A34",
+            background: "#0E0E12",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: "10px", color: "#5A5A60", fontWeight: 700, letterSpacing: "0.12em" }}>
+              FRED INVOICE
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: "#9A9AA0", marginTop: "4px" }}>
+              Fakturering & Swish-länkar
+            </div>
+          </div>
+          <div
+            style={{
+              fontSize: "11px",
+              padding: "8px 12px",
+              borderRadius: "10px",
+              background: "#15151A",
+              border: "1px solid #1E1E24",
+              color: "#6E6E78",
+            }}
+          >
+            Coming soon
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return (
+    <div>
+      {HEADER}
+      <InvoiceFrame />
+    </div>
+  );
+}

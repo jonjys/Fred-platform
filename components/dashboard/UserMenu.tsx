@@ -27,6 +27,16 @@ export function UserMenu({ email }: { email: string }) {
 
   function handleSignOut() {
     startTransition(async () => {
+      // Best-effort: clear the Snabbfaktura session via our own proxy
+      // before we sign out of Supabase, since the proxy needs the current
+      // session to derive the Bearer token it forwards. Must never block
+      // or fail the real sign-out below.
+      try {
+        await fetch("/api/invoice-proxy/auth/logout", { method: "POST" });
+      } catch {
+        // ignored — Fred's own sign-out is what matters
+      }
+
       const supabase = createSupabaseBrowserClient();
       await supabase.auth.signOut();
       router.push("/login");
