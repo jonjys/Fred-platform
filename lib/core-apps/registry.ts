@@ -1,3 +1,4 @@
+@'
 export type CoreAppCategory = "BUSINESS" | "INFRA";
 
 export interface CoreAppEntry {
@@ -9,20 +10,19 @@ export interface CoreAppEntry {
   category: CoreAppCategory;
   url?: string;
   healthPath: string;
+  embedPath: string;
 }
 
-/** Static metadata for every app embeddable under /core/[appName]. The
- * actual URL is resolved from its env var at call time (see ENV_VAR_BY_ID)
- * rather than baked in here, so tests can set process.env before calling. */
 const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
   {
     id: "invoice",
     name: "Fred Invoice",
     tag: "Billing",
-    desc: "Fakturera på 30 sekunder med Swish-länk",
+    desc: "Fakturera pa 30 sekunder med Swish-lank",
     accent: "#00E5FF",
     category: "BUSINESS",
     healthPath: "/api/health",
+    embedPath: "/api/",
   },
   {
     id: "radar",
@@ -32,6 +32,7 @@ const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
     accent: "#BFFF00",
     category: "BUSINESS",
     healthPath: "/api/health",
+    embedPath: "/quiz",
   },
   {
     id: "cast",
@@ -41,6 +42,7 @@ const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
     accent: "#8B5CF6",
     category: "BUSINESS",
     healthPath: "/api/health",
+    embedPath: "/connect",
   },
   {
     id: "debt-optimizer",
@@ -50,6 +52,7 @@ const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
     accent: "#FF4D8D",
     category: "BUSINESS",
     healthPath: "/api/health",
+    embedPath: "/",
   },
   {
     id: "gatezero",
@@ -59,6 +62,7 @@ const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
     accent: "#FF6B00",
     category: "INFRA",
     healthPath: "/api/health",
+    embedPath: "/gate",
   },
   {
     id: "promptslaktaren",
@@ -68,6 +72,7 @@ const DEFINITIONS: Omit<CoreAppEntry, "url">[] = [
     accent: "#FFFFFF",
     category: "INFRA",
     healthPath: "/api/health",
+    embedPath: "/",
   },
 ];
 
@@ -80,12 +85,22 @@ const ENV_VAR_BY_ID: Record<string, string> = {
   promptslaktaren: "NEXT_PUBLIC_PROMPTSLAKTAREN_URL",
 };
 
+const FALLBACK_URL_BY_ID: Record<string, string> = {
+  invoice: "https://snabbfaktura.vercel.app",
+  radar: "https://fred-radar.vercel.app",
+  cast: "https://fred-cast.vercel.app",
+  "debt-optimizer": "https://debt-optimizer-standalone.vercel.app",
+  gatezero: "https://gatekeeper-beta-three.vercel.app",
+  promptslaktaren: "https://promptslaktaren.vercel.app",
+};
+
 export function getCoreApps(): CoreAppEntry[] {
   return DEFINITIONS.map((def) => {
     const envVar = ENV_VAR_BY_ID[def.id];
+    const envUrl = envVar? process.env[envVar] : undefined;
     return {
-      ...def,
-      url: (envVar ? process.env[envVar] : undefined) || undefined,
+     ...def,
+      url: envUrl || FALLBACK_URL_BY_ID[def.id],
     };
   });
 }
@@ -93,3 +108,7 @@ export function getCoreApps(): CoreAppEntry[] {
 export function getCoreApp(id: string): CoreAppEntry | undefined {
   return getCoreApps().find((app) => app.id === id);
 }
+'@ | Set-Content -Path lib\core-apps\registry.ts -Encoding utf8
+
+echo "Filen uppdaterad - kollar:"
+type lib\core-apps\registry.ts | Select-String "gatekeeper|promptslaktaren|FALLBACK" -Context 0,0
