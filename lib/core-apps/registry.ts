@@ -1,5 +1,4 @@
-@'
-export type CoreAppCategory = "BUSINESS" | "INFRA";
+﻿export type CoreAppCategory = "BUSINESS" | "INFRA";
 
 export interface CoreAppEntry {
   id: string;
