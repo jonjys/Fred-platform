@@ -7,6 +7,7 @@ const business = [
   { id:"tunnel", name:"Fred Tunnel", tag:"Ingestion", desc:"CapCut, YouTube, Swish -> inbox", href:"/core/tunnel", accent:"#FF4D8D" },
   { id:"cast", name:"FredCast", tag:"Content OS", desc:"Voice & video - podcast factory", href:"/core/cast", accent:"#8B5CF6" },
   { id:"radar", name:"Fred Radar", tag:"Intelligence", desc:"Track prices, suppliers & market", href:"/core/radar", accent:"#BFFF00" },
+  { id:"promptslaktaren", name:"Promptslaktaren", tag:"Prompt Ops", desc:"Rotate keys, kill switch, spend control", href:"/core/promptslaktaren", accent:"#FF6B00" },
 ];
 const infra = [
   { id:"gatezero", name:"GateZero", tag:"Zero Trust Gateway", desc:"Entry, auth & approval - API gateway", href:"/core/gatezero", accent:"#FF6B00" },
