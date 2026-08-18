@@ -107,7 +107,3 @@ export function getCoreApps(): CoreAppEntry[] {
 export function getCoreApp(id: string): CoreAppEntry | undefined {
   return getCoreApps().find((app) => app.id === id);
 }
-'@ | Set-Content -Path lib\core-apps\registry.ts -Encoding utf8
-
-echo "Filen uppdaterad - kollar:"
-type lib\core-apps\registry.ts | Select-String "gatekeeper|promptslaktaren|FALLBACK" -Context 0,0
