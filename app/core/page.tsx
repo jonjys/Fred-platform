@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/database/supabase/server";
 import { getCoreApps, type CoreAppEntry } from "@/lib/core-apps/registry";
 import { isAppHealthy } from "@/lib/core-apps/health";
 
@@ -68,6 +70,14 @@ function Tile({ id, name, tag, desc, accent, href, live }: { id: string; name: s
 }
 
 export default async function CorePage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    redirect("/login");
+  }
+
   let apps: CoreAppEntry[] = [];
   try {
     apps = getCoreApps();
