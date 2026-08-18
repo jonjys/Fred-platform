@@ -1,11 +1,11 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // /core is an experimental shell, not the real app — see app/page.tsx.
+  // /core is a separate experimental hub, not the real app — see app/page.tsx.
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
