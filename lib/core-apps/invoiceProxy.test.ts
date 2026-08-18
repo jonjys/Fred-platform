@@ -20,14 +20,17 @@ function request(path: string, init: RequestInit = {}): Request {
 }
 
 describe("forwardToInvoiceApp", () => {
-  it("returns 503 when NEXT_PUBLIC_SNABBFAKTURA_URL is not configured", async () => {
+  it("falls back to snabbfaktura.vercel.app when NEXT_PUBLIC_SNABBFAKTURA_URL is not configured", async () => {
     delete process.env.NEXT_PUBLIC_SNABBFAKTURA_URL;
     mockGetSession.mockResolvedValue({ data: { session: { access_token: "tok" } } });
+    mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
 
-    const response = await forwardToInvoiceApp(request("/api/invoice-proxy"), []);
+    await forwardToInvoiceApp(request("/api/invoice-proxy/invoices"), ["invoices"]);
 
-    expect(response.status).toBe(503);
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://snabbfaktura.vercel.app/api/invoices",
+      expect.anything(),
+    );
   });
 
   it("returns 401 when there is no Supabase session — never forwards an unauthenticated request", async () => {
@@ -56,13 +59,25 @@ describe("forwardToInvoiceApp", () => {
     expect(headers.get("authorization")).toBe("Bearer tok-123");
   });
 
-  it("forwards to the bare /api root when path is empty (the iframe's initial load)", async () => {
+  it("forwards the iframe initial load to the app shell, not /api/", async () => {
     mockGetSession.mockResolvedValue({ data: { session: { access_token: "tok" } } });
     mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
 
     await forwardToInvoiceApp(request("/api/invoice-proxy"), []);
 
-    expect(mockFetch).toHaveBeenCalledWith("https://snabbfaktura.vercel.app/api/", expect.anything());
+    expect(mockFetch).toHaveBeenCalledWith("https://snabbfaktura.vercel.app/", expect.anything());
+  });
+
+  it("does not double /api when the catch-all already includes api", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "tok" } } });
+    mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
+
+    await forwardToInvoiceApp(request("/api/invoice-proxy/api/invoices"), ["api", "invoices"]);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://snabbfaktura.vercel.app/api/invoices",
+      expect.anything(),
+    );
   });
 
   it("preserves the query string on the forwarded request", async () => {

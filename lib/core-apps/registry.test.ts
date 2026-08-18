@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getCoreApp, getCoreApps } from "./registry";
+import { getCoreApp, getCoreApps, sanitizePublicUrl, FALLBACK_URL_BY_ID } from "./registry";
 
 const ENV_VARS = [
   "NEXT_PUBLIC_SNABBFAKTURA_URL",
@@ -14,6 +14,25 @@ beforeEach(() => {
   for (const key of ENV_VARS) delete process.env[key];
 });
 
+describe("sanitizePublicUrl", () => {
+  it("trims spaces and strips comments", () => {
+    expect(sanitizePublicUrl("  https://gatekeeper-beta-three.vercel.app  # junk")).toBe(
+      "https://gatekeeper-beta-three.vercel.app",
+    );
+  });
+
+  it("rejects leftover %20 garbage", () => {
+    expect(sanitizePublicUrl("https://gatekeeper-beta-three.vercel.app%20")).toBe(
+      "https://gatekeeper-beta-three.vercel.app",
+    );
+  });
+
+  it("returns undefined for empty or non-http values", () => {
+    expect(sanitizePublicUrl("")).toBeUndefined();
+    expect(sanitizePublicUrl("not-a-url")).toBeUndefined();
+  });
+});
+
 describe("getCoreApps", () => {
   it("returns all six registered apps", () => {
     expect(getCoreApps().map((a) => a.id).sort()).toEqual(
@@ -21,9 +40,11 @@ describe("getCoreApps", () => {
     );
   });
 
-  it("leaves url undefined when the app's env var is not set", () => {
+  it("falls back to a clean URL when the env var is not set", () => {
     const radar = getCoreApps().find((a) => a.id === "radar");
-    expect(radar?.url).toBeUndefined();
+    expect(radar?.url).toBe(FALLBACK_URL_BY_ID.radar);
+    const gate = getCoreApps().find((a) => a.id === "gatezero");
+    expect(gate?.url).toBe("https://gatekeeper-beta-three.vercel.app");
   });
 
   it("resolves each app's url from its own env var", () => {
@@ -33,7 +54,14 @@ describe("getCoreApps", () => {
     const apps = getCoreApps();
     expect(apps.find((a) => a.id === "radar")?.url).toBe("https://fred-radar.vercel.app");
     expect(apps.find((a) => a.id === "cast")?.url).toBe("https://fred-cast.vercel.app");
-    expect(apps.find((a) => a.id === "gatezero")?.url).toBeUndefined();
+  });
+
+  it("ignores dirty env vars and uses the fallback instead", () => {
+    process.env.NEXT_PUBLIC_GATEZERO_URL = "https://gatekeeper-beta-three.vercel.app%20 // comment";
+    const gate = getCoreApps().find((a) => a.id === "gatezero");
+    expect(gate?.url).toBe("https://gatekeeper-beta-three.vercel.app");
+    expect(gate?.url).not.toContain("%20");
+    expect(gate?.url).not.toContain(" ");
   });
 
   it("categorizes business vs infra apps correctly", () => {

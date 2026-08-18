@@ -68,7 +68,13 @@ function Tile({ id, name, tag, desc, accent, href, live }: { id: string; name: s
 }
 
 export default async function CorePage() {
-  const apps = getCoreApps();
+  let apps: CoreAppEntry[] = [];
+  try {
+    apps = getCoreApps();
+  } catch (error) {
+    console.error("getCoreApps() failed on /core", error);
+    apps = [];
+  }
   const withStatus: StatusedApp[] = await Promise.all(
     apps.map(async (app) => ({ ...app, live: await isAppHealthy(app) })),
   );

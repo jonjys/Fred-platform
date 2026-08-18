@@ -16,7 +16,9 @@ const HEADER = (
 );
 
 export default async function Page() {
-  const baseUrl = process.env.NEXT_PUBLIC_SNABBFAKTURA_URL;
+  const { sanitizePublicUrl } = await import("@/lib/core-apps/registry");
+  const baseUrl =
+    sanitizePublicUrl(process.env.NEXT_PUBLIC_SNABBFAKTURA_URL) || "https://snabbfaktura.vercel.app";
 
   if (!baseUrl) {
     return (

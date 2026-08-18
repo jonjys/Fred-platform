@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // pdf-parse relies on Node's fs/Buffer APIs and must stay on the Node.js
-  // runtime rather than being bundled for the Edge runtime. Lost during a
-  // CSP add/revert pass — restoring it: without this, PDF upload parsing
-  // in the analyze form breaks on Vercel.
   serverExternalPackages: ["pdf-parse"],
+  async rewrites() {
+    return [
+      { source: "/api/invoices", destination: "/api/invoice-proxy/invoices" },
+      { source: "/api/invoices/:path*", destination: "/api/invoice-proxy/invoices/:path*" },
+      { source: "/api/auth/:path*", destination: "/api/invoice-proxy/auth/:path*" },
+    ];
+  },
 };
 export default nextConfig;
