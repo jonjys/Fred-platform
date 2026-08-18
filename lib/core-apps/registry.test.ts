@@ -64,6 +64,12 @@ describe("getCoreApps", () => {
     expect(gate?.url).not.toContain(" ");
   });
 
+  it("leaves debt-optimizer's url undefined when its env var is unset — no fallback, unlike the other apps", () => {
+    const debtOptimizer = getCoreApps().find((a) => a.id === "debt-optimizer");
+    expect(debtOptimizer?.url).toBeUndefined();
+    expect(FALLBACK_URL_BY_ID).not.toHaveProperty("debt-optimizer");
+  });
+
   it("categorizes business vs infra apps correctly", () => {
     const apps = getCoreApps();
     expect(apps.find((a) => a.id === "invoice")?.category).toBe("BUSINESS");

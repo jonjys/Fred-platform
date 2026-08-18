@@ -84,11 +84,13 @@ const ENV_VAR_BY_ID: Record<string, string> = {
   promptslaktaren: "NEXT_PUBLIC_PROMPTSLAKTAREN_URL",
 };
 
+// No fallback for debt-optimizer: NEXT_PUBLIC_DEBT_OPTIMIZER_URL is left
+// unset on purpose until Module 2 is ported, so it must show SOON — a
+// fallback here would silently override that and flip the badge to LIVE.
 const FALLBACK_URL_BY_ID: Record<string, string> = {
   invoice: "https://snabbfaktura.vercel.app",
   radar: "https://fred-radar.vercel.app",
   cast: "https://fred-cast.vercel.app",
-  "debt-optimizer": "https://debt-optimizer-standalone.vercel.app",
   gatezero: "https://gatekeeper-beta-three.vercel.app",
   promptslaktaren: "https://promptslaktaren.vercel.app",
 };

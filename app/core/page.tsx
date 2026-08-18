@@ -27,8 +27,8 @@ function Tile({ id, name, tag, desc, accent, href, live }: { id: string; name: s
     <Link
       key={id}
       href={href}
+      className="col-span-1 sm:col-span-3"
       style={{
-        gridColumn: "span 3",
         padding: "22px",
         borderRadius: "18px",
         background: "linear-gradient(180deg, #13131A 0%, #0E0E12 100%)",
@@ -96,11 +96,11 @@ export default async function CorePage() {
       </div>
 
       <div style={{ marginTop: "32px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#3A3A44" }}>BUSINESS APPS — LIVE</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: "14px", marginTop: "12px" }}>
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-[14px]" style={{ marginTop: "12px" }}>
         <Link
           href={procure.href}
+          className="col-span-1 sm:col-span-6"
           style={{
-            gridColumn: "span 6",
             padding: "22px",
             borderRadius: "18px",
             background: "linear-gradient(180deg, #13131A 0%, #0E0E12 100%)",
@@ -125,11 +125,11 @@ export default async function CorePage() {
       </div>
 
       <div style={{ marginTop: "36px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#3A3A44" }}>INFRASTRUCTURE — APIS, GATEWAYS & CONTROL</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: "14px", marginTop: "12px" }}>
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-[14px]" style={{ marginTop: "12px" }}>
         {infra.map((app) => (
           <Tile key={app.id} id={app.id} name={app.name} tag={app.tag} desc={app.desc} accent={app.accent} href={`/core/${app.id}`} live={app.live} />
         ))}
-        <div style={{ gridColumn: "span 6", padding: "22px", borderRadius: "18px", border: "1px dashed #2A2A34", background: "#0E0E12", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="col-span-1 sm:col-span-6" style={{ padding: "22px", borderRadius: "18px", border: "1px dashed #2A2A34", background: "#0E0E12", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: "10px", color: "#5A5A60", fontWeight: 700, letterSpacing: "0.12em" }}>DEVELOPER</div>
             <div style={{ fontSize: "14px", fontWeight: 700, color: "#9A9AA0", marginTop: "4px" }}>APIs, webhooks, keys</div>
