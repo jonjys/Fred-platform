@@ -28,3 +28,7 @@ next-env.d.ts
 # vercel
 .vercel
 .env*
+
+dev.log
+page.html
+public/landing.html
