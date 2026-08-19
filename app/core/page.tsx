@@ -25,22 +25,23 @@ type StatusedApp = CoreAppEntry & { live: boolean };
 
 function Tile({ id, name, tag, desc, accent, href, live }: { id: string; name: string; tag: string; desc: string; accent: string; href: string; live?: boolean }) {
   const isLight = ["#BFFF00", "#00E5FF", "#34C759", "#FFFFFF"].includes(accent);
-  return (
-    <Link
-      key={id}
-      href={href}
-      className="col-span-1 sm:col-span-3"
-      style={{
-        padding: "22px",
-        borderRadius: "18px",
-        background: "linear-gradient(180deg, #13131A 0%, #0E0E12 100%)",
-        border: "1px solid #1E1E24",
-        display: "block",
-        position: "relative",
-        overflow: "hidden",
-        textDecoration: "none",
-      }}
-    >
+  const clickable = live !== false; // undefined (no badge, e.g. native pages) still counts as clickable
+
+  const style: React.CSSProperties = {
+    padding: "22px",
+    borderRadius: "18px",
+    background: "linear-gradient(180deg, #13131A 0%, #0E0E12 100%)",
+    border: "1px solid #1E1E24",
+    display: "block",
+    position: "relative",
+    overflow: "hidden",
+    textDecoration: "none",
+    opacity: clickable ? 1 : 0.6,
+    cursor: clickable ? "pointer" : "default",
+  };
+
+  const content = (
+    <>
       <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "160px", height: "160px", borderRadius: "999px", background: accent + "25", filter: "blur(32px)" }}></div>
       {live !== undefined && (
         <span
@@ -65,9 +66,32 @@ function Tile({ id, name, tag, desc, accent, href, live }: { id: string; name: s
       <div style={{ marginTop: "14px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#5A5A60" }}>{tag}</div>
       <div style={{ marginTop: "4px", fontSize: "16px", fontWeight: 700, color: "#fff" }}>{name}</div>
       <div style={{ marginTop: "4px", fontSize: "12px", color: "#6E6E78" }}>{desc}</div>
+    </>
+  );
+
+  if (!clickable) {
+    return (
+      <div key={id} className="col-span-1 sm:col-span-3" style={style}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link key={id} href={href} className="col-span-1 sm:col-span-3" style={style}>
+      {content}
     </Link>
   );
 }
+
+const intake = {
+  id: "intake",
+  name: "Fred Intake",
+  tag: "Ingestion",
+  desc: "Dela hit från CapCut, YouTube eller Swish",
+  href: "/core/intake",
+  accent: "#34C759",
+};
 
 export default async function CorePage() {
   const supabase = await createSupabaseServerClient();
@@ -129,6 +153,7 @@ export default async function CorePage() {
           <div style={{ marginTop: "4px", fontSize: "16px", fontWeight: 700, color: "#fff" }}>{procure.name}</div>
           <div style={{ marginTop: "4px", fontSize: "12px", color: "#6E6E78" }}>{procure.desc}</div>
         </Link>
+        <Tile id={intake.id} name={intake.name} tag={intake.tag} desc={intake.desc} accent={intake.accent} href={intake.href} live={true} />
         {business.map((app) => (
           <Tile key={app.id} id={app.id} name={app.name} tag={app.tag} desc={app.desc} accent={app.accent} href={`/core/${app.id}`} live={app.live} />
         ))}
