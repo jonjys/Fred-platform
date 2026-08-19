@@ -1,9 +1,29 @@
-# AI Business Decision OS
+# FRED — AI Business Decision OS
 
-A Decision Intelligence Platform for SMBs, solopreneurs, and B2B buyers. It answers: **"Should I BUY, NEGOTIATE, or
-REJECT this decision?"** — starting with the AI Purchase Analyzer, the first of many planned Decision Modules
-(Supplier Comparison, Contract Intelligence, Procurement, Investment Analysis, Pricing Intelligence, Due Diligence,
-Vendor Management...).
+**What FRED is, in one sentence:** a system that answers *"Should I BUY, NEGOTIATE, or REJECT this decision?"* for a
+small business owner or CFO — with a real, calculated number behind the answer, not a guess.
+
+That's the whole point. Not a dashboard, not a chat bot, not a suite of tools bolted together — one honest verdict
+per decision, backed by a deterministic engine that computes TCO, ROI, and VAT-adjusted cost. AI is allowed to
+*explain* and *reason about qualitative risk*. AI is never allowed to invent or calculate the number. That split is
+the whole architecture (see below) and it is not negotiable — it's the difference between a decision tool a CFO can
+trust and one they can't.
+
+**What it was meant to become:** not a single calculator — an operating system for business decisions. Purchase
+Analysis was the first Decision Module. The plan was more of them (Debt Optimization, ROI Analysis, Supplier
+Comparison, Contract Intelligence, Procurement, Investment Analysis, Pricing Intelligence, Due Diligence, Vendor
+Management), all sharing one engine, one company profile (the "AI Wallet" — currency, VAT rate, margin, budget), and
+one decision history per user — so decisions accumulate into a real track record instead of each analysis being
+disposable. The outcome-tracking feature (did the BUY actually pay off?) exists for exactly this reason: FRED is
+supposed to get to know whether its own verdicts were right.
+
+**Which repo to build the new platform on: this one — `jonjys/Fred-platform`.** Not `jonjys/promptslaktaren`
+(BridgeControl). That repo is a different product for a different purpose (an API spend/toll control plane for other
+tools), and it isn't in the state you'd want a foundation to be in — it has unresolved stub logic in its billing-
+adjacent classification code and an RLS gap on its production database that's still open as of this writing. This
+repo has the real thing: a tested, deterministic decision engine, real Stripe billing enforced server-side, real
+RLS-protected user data, and a module contract already designed for exactly the kind of growth described above —
+one line to register a new Decision Module, no schema or pipeline changes required. Build here.
 
 ## Architecture
 
