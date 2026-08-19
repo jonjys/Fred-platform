@@ -316,6 +316,81 @@ export interface Database {
         };
         Relationships: [];
       };
+      devices: {
+        Row: {
+          id: string;
+          user_id: string;
+          device_name: string | null;
+          last_seen: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          device_name?: string | null;
+          last_seen?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          device_name?: string | null;
+          last_seen?: string;
+        };
+        Relationships: [];
+      };
+      atoms: {
+        Row: {
+          id: string;
+          user_id: string;
+          source: string;
+          type: string;
+          payload: Json;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source: string;
+          type: string;
+          payload: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          source?: string;
+          type?: string;
+          payload?: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
+      tunnels: {
+        Row: {
+          id: string;
+          atom_id: string;
+          device_id: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          atom_id: string;
+          device_id: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          atom_id?: string;
+          device_id?: string;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
