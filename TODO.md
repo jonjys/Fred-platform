@@ -2,6 +2,37 @@
 
 Last updated: 2026-08-19 (night session)
 
+## Radar 06 — shipped as internal command console (0a27add)
+
+Commit `5d0ed2d` landed on `main` mid-session shipping Radar 06 as a chat
+that called the Anthropic API directly (`ANTHROPIC_API_KEY`, streaming) on
+a public, no-auth page, with a system prompt describing Fred's own
+security posture — the opposite of "internal command console, no external
+LLM" that was explicitly asked for earlier the same night. Reverted and
+rebuilt:
+
+- `app/api/radar/route.ts` — `POST {message}`, matches against Fred's own
+  APIs only. `help`/`status` need no auth; `beslut`/`decisions`/`saldo`
+  are session-gated the same way `/api/intake` and `/api/invoice-proxy`
+  already are.
+- `tolls`, `vacuum status`, `bridge stop` are **stubs that say so**, not
+  fabricated output. They'd need the bridgecontrol Supabase project
+  (`azcbgxbkbxdmpgschhau`), which Fred-platform has no credentials for —
+  and `bridge stop` would `INSERT INTO kill_rules`, a real production
+  kill-switch, from a page anyone can reach with no login. That's a
+  decision to make on purpose, not a side effect of a command list. Say
+  the word if you want it wired for real (needs a second Supabase
+  client + service-role key + an explicit call on whether it should stay
+  public).
+- `components/core/RadarConsole.tsx` — reuses `PressureMeter` from the
+  reverted commit, but feeds it the real live/total ratio from the
+  existing core-app health checks instead of the original's random
+  jitter.
+- **Separately noticed, not fixed tonight**: `/core/vacuum` shows fixed
+  numbers ("8 400/1 600", "24,8 MB sparat", "AUTO-VACUUM ON") — plain JSX
+  strings, no data source. Flagging it since it's the same shape of issue
+  as what got reverted here.
+
 ## Tonight's ask: make / and /login public — DONE
 
 Everything from the "PROMPTSLAKTAREN + FRED-PLATFORM FIX" instruction is
@@ -27,35 +58,33 @@ Verified locally against a production build with no session:
 `/` → 307 → `/core`, `/login` → 307 → `/core`, `/core` → 200,
 `/dashboard` → 307 → `/login`. `tsc`/lint/210 tests/build all green.
 
-## Not done: Supabase `bridgecontrol` RLS SQL
+## Supabase `bridgecontrol` RLS — written, still not executed
 
-Held back, not run. Two reasons:
+You confirmed bridgecontrol (Promptslaktaren's production DB for
+HERDPRISM/LEASEBRO/DRAINCACHE/STORMKROK) is a different system from
+Vacuum, just copy-pasted table names — checked this against the actual
+`promptslaktaren` repo and it holds up: `kill_rules`, `traps`,
+`proxy_routes`, `spend_ledger`, `kill_logs`, `keys_meta`, `usage_events`
+are all read/written server-side only, through a service-role Supabase
+client, so locking them to `service_role`-only shouldn't break anything.
 
-1. The Supabase MCP tool disconnected mid-session before I could check
-   whether `Fredbase2`/`bridgecontrol` is even a project this account
-   has access to — I have never seen it referenced anywhere else in this
-   codebase or session.
-2. `keys_meta`, `usage_events`, and `spend_ledger` are the **exact same
-   table names** from the "PERFECT-DAMMSUGARE / Vacuum" spec I declined
-   to build two nights ago (a mechanism that deleted usage/billing
-   events and took a 5% cut of a fabricated "savings" figure). Seeing
-   those same three names again here, now joined by `kill_rules`,
-   `traps`, `kill_logs`, and `bridge_tolls` — a "toll" charged to cross a
-   "bridge" — reads like the same shape of system under a different
-   name, possibly the actual backing store for it.
+The migration is written and pushed to `jonjys/promptslaktaren` at
+`supabase/migrations/20260820_bridgecontrol_rls.sql`, idempotent
+(`drop policy if exists` before each `create policy`) and includes a
+`pg_policies` check query in its header comment. **Not yet run** — this
+session has no Supabase MCP connection, so I can't execute SQL or check
+Security Advisors directly. Run it via the SQL Editor for project
+`azcbgxbkbxdmpgschhau`, or hand it to a session that has Supabase access.
 
-The SQL itself (enable RLS, restrict to `service_role`) is defensively
-reasonable *in isolation* — it only restricts access, doesn't touch
-data. But I don't know what writes to these tables, what depends on
-reading them today, or what the system actually does, and applying
-schema changes to a live production database I've never seen isn't
-something to do on a one-shot instruction without that context.
-
-**Before I touch this: what does bridgecontrol actually do?** If it's
-unrelated to Vacuum and the name overlap is coincidental, say so and
-I'll run the RLS hardening — it's good practice once I understand what
-I'm locking down. If it's connected to Vacuum, I'd want to understand
-the mechanism the same way I asked for detail on Vacuum before deciding.
+Separate, still-unanswered from the same review: `src/lib/tolls/{prism,
+drain}.ts` in `promptslaktaren` — `classifyHerd()` always returns
+`'REAL'` and `isDuplicateFingerprint()` always returns `false`, regardless
+of input, while each toll module exports a fixed take-rate constant
+matching the 4.1%/2.4%/5.5%/1.7% figures. Nothing else in the app
+references these yet (not wired into a live billing path), but before
+anything does: is that stub-as-classifier pattern known placeholder code,
+or intended to ship as the actual detection logic? Haven't heard back on
+this one.
 
 ## Standing items from earlier (nattpass), still open
 
