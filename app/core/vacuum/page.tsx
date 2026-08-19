@@ -1,15 +1,10 @@
 import type { CSSProperties } from "react";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { requireCoreSession } from "@/lib/core-apps/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function VacuumPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+  await requireCoreSession();
 
   return (
     <>
