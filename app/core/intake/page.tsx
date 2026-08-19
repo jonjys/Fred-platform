@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { requireCoreSession } from "@/lib/core-apps/access";
 import { IntakeClient } from "./IntakeClient";
 
 // PWA share-target: manifest.json's share_target.action points here, so
@@ -17,14 +16,7 @@ export default async function IntakePage({
 }: {
   searchParams: Promise<{ title?: string; text?: string; url?: string }>;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
+  await requireCoreSession();
 
   const params = await searchParams;
   const initialShared = [params.title, params.text, params.url].filter(Boolean).join(" ").trim();

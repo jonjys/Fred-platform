@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { requireCoreSession } from "@/lib/core-apps/access";
 import { InvoiceFrame } from "./frame";
 
 const HEADER = (
@@ -61,14 +60,7 @@ export default async function Page() {
     );
   }
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
+  await requireCoreSession();
 
   return (
     <div>

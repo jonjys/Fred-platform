@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { notFound } from "next/navigation";
+import { requireCoreSession } from "@/lib/core-apps/access";
 import { getCoreApp } from "@/lib/core-apps/registry";
 import { CoreAppFrame } from "@/lib/core-apps/CoreAppFrame";
 
@@ -62,14 +62,7 @@ export default async function Page({ params }: { params: Promise<{ appName: stri
     );
   }
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
+  await requireCoreSession();
 
   return (
     <div>

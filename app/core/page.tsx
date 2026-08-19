@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/database/supabase/server";
+import { requireCoreSession } from "@/lib/core-apps/access";
 import { getCoreApps, type CoreAppEntry } from "@/lib/core-apps/registry";
 import { isAppHealthy } from "@/lib/core-apps/health";
 
@@ -94,13 +93,7 @@ const intake = {
 };
 
 export default async function CorePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    redirect("/login");
-  }
+  await requireCoreSession();
 
   let apps: CoreAppEntry[] = [];
   try {
