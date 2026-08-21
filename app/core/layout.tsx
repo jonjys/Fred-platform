@@ -22,9 +22,6 @@ export default function CoreLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="md:flex" style={{ minHeight: "100vh", background: "#070708", color: "#EDEDE9" }}>
-      {/* Mobile top bar — the fixed 260px sidebar below is desktop-only
-         (md:flex on <aside>). At 390px a fixed sidebar would leave almost
-         no room for content, so mobile gets a slim horizontal nav instead. */}
       <div
         className="flex md:hidden"
         style={{
@@ -54,7 +51,7 @@ export default function CoreLayout({ children }: { children: React.ReactNode }) 
       >
         <div style={{ padding: "28px 22px", display: "flex", gap: "12px", alignItems: "center" }}>
           {brand(32)}
-          <div style={{ fontWeight: 800, fontSize: "15px" }}>Fred Platform</div>
+          <div style={{ fontWeight: 800, fontSize: "15px" }}>FRED OS</div>
         </div>
         <div style={{ flex: 1, overflowY: "auto", paddingBottom: "16px" }}>
           <CoreSidebarNav layout="sidebar" />

@@ -16,7 +16,7 @@ const TOKENS = {
 const STORAGE_KEY = "fred-radar-history-v1";
 const WELCOME: Line = {
   kind: "output",
-  text: 'Fred Radar — kommandokonsol. Skriv "help" för kommandon.',
+  text: 'Fred Radar — main OS chat. Skriv "help" för kommandon.',
 };
 
 function loadHistory(): Line[] {
@@ -46,7 +46,7 @@ export function RadarConsole({ load }: { load: number }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
     } catch {
-      // best-effort only — a full/unavailable localStorage shouldn't break the console
+      // best-effort only
     }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [lines]);
@@ -61,13 +61,44 @@ export function RadarConsole({ load }: { load: number }) {
       const response = await fetch("/api/radar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, stream: true }),
       });
-      const result = await response.json();
-      const outputLines: string[] = result.lines ?? [`Fel: oväntat svar (${response.status})`];
-      setLines((prev) => [...prev, ...outputLines.map((line) => ({ kind: "output" as const, text: line }))]);
+
+      if (!response.ok || !response.body) {
+        setLines((prev) => [
+          ...prev,
+          { kind: "output", text: `Fel: oväntat svar (${response.status})` },
+        ]);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value: chunk } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(chunk, { stream: true });
+        const parts = buffer.split("\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          if (!part.trim()) continue;
+          try {
+            const evt = JSON.parse(part) as { line?: string; done?: boolean };
+            if (typeof evt.line === "string") {
+              setLines((prev) => [...prev, { kind: "output", text: evt.line! }]);
+            }
+          } catch {
+            // skip malformed chunk
+          }
+        }
+      }
     } catch {
-      setLines((prev) => [...prev, { kind: "output", text: "Nätverksfel — kunde inte nå Fred." }]);
+      setLines((prev) => [
+        ...prev,
+        { kind: "output", text: "Nätverksfel — kunde inte nå Fred." },
+      ]);
     } finally {
       setSending(false);
     }
@@ -197,13 +228,19 @@ export function RadarConsole({ load }: { load: number }) {
           background: TOKENS.card,
         }}
       >
-        <span style={{ color: TOKENS.live, fontFamily: "ui-monospace, monospace", alignSelf: "center" }}>
+        <span
+          style={{
+            color: TOKENS.live,
+            fontFamily: "ui-monospace, monospace",
+            alignSelf: "center",
+          }}
+        >
           &gt;
         </span>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="help"
+          placeholder="help · status · saldo · decisions"
           style={{
             flex: 1,
             background: "transparent",

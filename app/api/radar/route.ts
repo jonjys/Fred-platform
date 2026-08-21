@@ -4,19 +4,9 @@ import { getProfile } from "@/lib/database/repositories/profiles";
 import { getCoreApps } from "@/lib/core-apps/registry";
 import { isAppHealthy } from "@/lib/core-apps/health";
 
-// Radar 06's command console. Talks to Fred-platform's own APIs only —
-// no external LLM, no ANTHROPIC_API_KEY. That's deliberate: this page is
-// public (CORE_REQUIRES_AUTH=false), and a public surface that calls out
-// to a model with a system prompt describing our own security posture is
-// a bigger attack surface than we want here.
-//
-// tolls / vacuum status / bridge stop are NOT wired to bridgecontrol
-// (Promptslaktaren's separate Supabase project, azcbgxbkbxdmpgschhau).
-// Fred-platform has no credentials for that project. "bridge stop" in
-// particular would INSERT INTO kill_rules — a real production kill-switch
-// — and this console has no auth gate, so it stays a stub until that's a
-// deliberate, confirmed decision rather than a side effect of a command
-// list.
+// Radar 06 command console. Talks to Fred-platform's own APIs only —
+// no external LLM, no ANTHROPIC_API_KEY. Public surface (CORE_REQUIRES_AUTH=false).
+// Streams NDJSON lines so the UI can render progressively.
 
 const HELP = [
   "Tillgängliga kommandon:",
@@ -36,7 +26,9 @@ async function handleStatus(): Promise<string[]> {
   } catch {
     return ["Kunde inte läsa app-registret."];
   }
-  const withStatus = await Promise.all(apps.map(async (a) => ({ ...a, live: await isAppHealthy(a) })));
+  const withStatus = await Promise.all(
+    apps.map(async (a) => ({ ...a, live: await isAppHealthy(a) })),
+  );
   return [
     "/core-appar:",
     ...withStatus.map((a) => `  ${a.live ? "LIVE" : "SOON"}  ${a.name}`),
@@ -54,7 +46,10 @@ async function handleDecisions(): Promise<string[]> {
   if (decisions.length === 0) return ["Inga beslut ännu. Full historik: /history"];
   return [
     "Dina senaste beslut:",
-    ...decisions.map((d) => `  [${d.status}] ${d.module_key} — ${new Date(d.created_at).toLocaleDateString("sv-SE")}`),
+    ...decisions.map(
+      (d) =>
+        `  [${d.status}] ${d.module_key} — ${new Date(d.created_at).toLocaleDateString("sv-SE")}`,
+    ),
     "Full historik: /history",
   ];
 }
@@ -105,39 +100,66 @@ function handleBridgeStop(): string[] {
   ];
 }
 
+async function resolveLines(raw: string): Promise<string[]> {
+  switch (raw) {
+    case "":
+      return [];
+    case "help":
+      return HELP;
+    case "status":
+      return handleStatus();
+    case "beslut":
+    case "decisions":
+      return handleDecisions();
+    case "saldo":
+    case "credits":
+    case "balance":
+      return handleBalance();
+    case "tolls":
+      return handleTolls();
+    case "vacuum status":
+      return handleVacuumStatus();
+    case "bridge stop":
+      return handleBridgeStop();
+    default:
+      return [`Kommando okänt. Testa: help, status, saldo, decisions, tolls`];
+  }
+}
+
+function streamLines(lines: string[]): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      for (const line of lines) {
+        controller.enqueue(encoder.encode(JSON.stringify({ line }) + "\n"));
+        // tiny yield so the client can paint progressively
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      controller.enqueue(encoder.encode(JSON.stringify({ done: true }) + "\n"));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const raw = typeof body.message === "string" ? body.message.trim().toLowerCase() : "";
+  const wantStream = body.stream !== false; // default stream
 
   try {
-    switch (raw) {
-      case "":
-        return Response.json({ ok: true, lines: [] });
-      case "help":
-        return Response.json({ ok: true, lines: HELP });
-      case "status":
-        return Response.json({ ok: true, lines: await handleStatus() });
-      case "beslut":
-      case "decisions":
-        return Response.json({ ok: true, lines: await handleDecisions() });
-      case "saldo":
-      case "credits":
-      case "balance":
-        return Response.json({ ok: true, lines: await handleBalance() });
-      case "tolls":
-        return Response.json({ ok: true, lines: handleTolls() });
-      case "vacuum status":
-        return Response.json({ ok: true, lines: handleVacuumStatus() });
-      case "bridge stop":
-        return Response.json({ ok: true, lines: handleBridgeStop() });
-      default:
-        return Response.json({
-          ok: true,
-          lines: [`Kommando okänt. Testa: help, saldo, decisions, tolls`],
-        });
-    }
+    const lines = await resolveLines(raw);
+    if (wantStream) return streamLines(lines);
+    return Response.json({ ok: true, lines });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Okänt fel";
+    if (wantStream) return streamLines([`Fel: ${message}`]);
     return Response.json({ ok: false, lines: [`Fel: ${message}`] }, { status: 500 });
   }
 }
